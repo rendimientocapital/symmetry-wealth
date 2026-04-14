@@ -1,27 +1,124 @@
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth'
 import { supabase } from '../lib/supabase'
+
 const router = Router()
+
+const PLAN_LIMITS: Record<string, number> = {
+  free: 4, basico: 20, pro: 40, full: 80, asesor: 80,
+}
+
+// GET /market/financials?ticker=CHILE.SN&collection=income_statement&periodo_tipo=ytd
 router.get('/financials', requireAuth, async (req: Request, res: Response) => {
-  const { ticker, collection, limit='8' } = req.query as Record<string,string>
-  if (!ticker||!collection) return res.status(400).json({ error: 'ticker y collection requeridos' })
-  const maxR: Record<string,number> = { free:4,basico:20,pro:40,full:200,asesor:200 }
-  const lim = Math.min(parseInt(limit), maxR[req.user!.plan]||4)
-  const { data } = await supabase.from('financial_data').select('date,period,year,data').eq('ticker',ticker).eq('collection',collection).order('date',{ascending:false}).limit(lim)
-  res.json({ items: data||[], ticker, collection })
+  const { ticker, collection, periodo_tipo = 'ytd', limit } = req.query as Record<string, string>
+  if (!ticker || !collection) return res.status(400).json({ error: 'ticker y collection requeridos' })
+
+  const maxRows = Math.min(
+    parseInt(limit || '99'),
+    PLAN_LIMITS[req.user!.plan] || 4
+  )
+
+  const { data, error } = await supabase
+    .from('financial_data')
+    .select('ticker, periodo, year, quarter, mes, collection, field, value, moneda, periodo_tipo')
+    .eq('ticker', ticker)
+    .eq('collection', collection)
+    .eq('periodo_tipo', periodo_tipo)
+    .order('year', { ascending: false })
+    .order('mes', { ascending: false })
+    .limit(maxRows)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  const byPeriodo: Record<string, any> = {}
+  for (const row of data || []) {
+    if (!byPeriodo[row.periodo]) {
+      byPeriodo[row.periodo] = {
+        periodo: row.periodo, year: row.year,
+        quarter: row.quarter, mes: row.mes, fields: {},
+      }
+    }
+    byPeriodo[row.periodo].fields[row.field] = { value: row.value, moneda: row.moneda }
+  }
+
+  res.json({
+    ticker, collection, periodo_tipo,
+    items: Object.values(byPeriodo).sort((a, b) =>
+      b.year !== a.year ? b.year - a.year : b.mes - a.mes
+    ),
+  })
 })
-router.get('/price', requireAuth, async (req: Request, res: Response) => {
-  const { ticker } = req.query as Record<string,string>
+
+// GET /market/key-metrics?ticker=CHILE.SN
+router.get('/key-metrics', requireAuth, async (req: Request, res: Response) => {
+  const { ticker } = req.query as Record<string, string>
   if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
-  const today = new Date().toISOString().split('T')[0]
-  const { data: cached } = await supabase.from('market_prices').select('*').eq('ticker',ticker).eq('fecha',today).single()
-  if (cached) return res.json(cached)
-  const fmpRes = await fetch(`https://financialmodelingprep.com/api/v3/quote/${ticker.replace('.SN','')}?apikey=${process.env.FMP_API_KEY}`)
-  const fmpData = await fmpRes.json() as any[]
-  if (!fmpData?.length) return res.status(404).json({ error: 'No encontrado' })
-  const q=fmpData[0], record = { ticker, fecha:today, precio:q.price, apertura:q.open, maximo:q.dayHigh, minimo:q.dayLow, volumen:q.volume, variacion:q.changesPercentage }
-  await supabase.from('market_prices').upsert(record, { onConflict: 'ticker,fecha' })
-  res.json(record)
+
+  const maxPeriodos = PLAN_LIMITS[req.user!.plan] || 4
+
+  const { data, error } = await supabase
+    .from('financial_data')
+    .select('periodo, year, mes, field, value, moneda')
+    .eq('ticker', ticker)
+    .eq('collection', 'key_metrics')
+    .eq('periodo_tipo', 'ytd')
+    .order('year', { ascending: false })
+    .order('mes', { ascending: false })
+    .limit(maxPeriodos * 10)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  const byPeriodo: Record<string, any> = {}
+  for (const row of data || []) {
+    if (!byPeriodo[row.periodo]) byPeriodo[row.periodo] = { periodo: row.periodo, year: row.year, mes: row.mes, metrics: {} }
+    byPeriodo[row.periodo].metrics[row.field] = row.value
+  }
+
+  res.json({ ticker, items: Object.values(byPeriodo) })
 })
-router.get('/tickers', requireAuth, (_,res) => res.json({ tickers: [{ticker:'ENELCHILE.SN',nombre:'Enel Chile S.A.',sector:'Energia',indice:'IPSA'},{ticker:'COLBUN.SN',nombre:'Colbun S.A.',sector:'Energia',indice:'IPSA'}] }))
+
+// GET /market/briefs?ticker=CHILE.SN&avatar=guardian&nivel=intermedio
+router.get('/briefs', requireAuth, async (req: Request, res: Response) => {
+  const { ticker, avatar, nivel, fecha } = req.query as Record<string, string>
+  if (!ticker || !avatar || !nivel) return res.status(400).json({ error: 'ticker, avatar y nivel requeridos' })
+
+  let query = supabase
+    .from('daily_briefs')
+    .select('*')
+    .eq('ticker', ticker).eq('avatar', avatar).eq('nivel', nivel)
+    .order('fecha', { ascending: false })
+    .limit(1)
+
+  if (fecha) query = query.eq('fecha', fecha)
+
+  const { data, error } = await query
+  if (error) return res.status(500).json({ error: error.message })
+  if (!data?.length) return res.status(404).json({ error: 'Brief no encontrado' })
+
+  res.json(data[0])
+})
+
+// GET /market/price?ticker=CHILE.SN
+router.get('/price', requireAuth, async (req: Request, res: Response) => {
+  const { ticker } = req.query as Record<string, string>
+  if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
+
+  try {
+    const apiKey = process.env.FMP_API_KEY
+    const symbol = ticker.replace('.SN', '')
+    const r = await fetch(`https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`)
+    const json = await r.json() as any[]
+    if (!json?.length) return res.status(404).json({ error: 'Precio no disponible' })
+    const q = json[0]
+    res.json({
+      ticker, symbol: q.symbol,
+      price: q.price, change: q.change, changesPercentage: q.changesPercentage,
+      open: q.open, dayLow: q.dayLow, dayHigh: q.dayHigh,
+      volume: q.volume, marketCap: q.marketCap, timestamp: q.timestamp,
+    })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 export default router
