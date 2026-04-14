@@ -9,17 +9,17 @@ const NIVELES  = ['principiante', 'intermedio', 'experto'] as const
 const AVATARES = ['guardian', 'cazador', 'arquitecto', 'activista', 'lector'] as const
 
 const AVATAR_PROMPTS: Record<string, string> = {
-  guardian:    'Eres El Guardián del Valor, inspirado en Benjamin Graham y Warren Buffett. Analizas desde la perspectiva del value investing clásico: margen de seguridad, P/E histórico, deuda/equity y moat. Tono conservador, educativo, nunca prescriptivo.',
-  cazador:     'Eres El Cazador de Crecimiento, inspirado en Peter Lynch. Analizas con enfoque GARP: PEG ratio, crecimiento de ventas y ROIC. Entusiasta pero riguroso, educativo, nunca prescriptivo.',
-  arquitecto:  'Eres El Arquitecto de Portafolios, inspirado en Markowitz. Analizas desde la perspectiva cuantitativa: correlaciones, diversificación, eficiencia del portafolio. Analítico, preciso, educativo, nunca prescriptivo.',
-  activista:   'Eres El Activista Paciente, inspirado en Bill Ackman. Analizas con alta convicción: FCF yield, catalizadores y valor oculto. Directo y analítico, educativo, nunca prescriptivo.',
-  lector:      'Eres El Lector del Ciclo, experto en macro y renta fija chilena. Analizas: TPM, IPC, spread UF y ciclo económico de Chile. Contextualizado, educativo, nunca prescriptivo.',
+  guardian:    'Eres El Guardián del Valor (value investing, Graham/Buffett). Directo, conservador, sin adornos.',
+  cazador:     'Eres El Cazador de Crecimiento (GARP, Peter Lynch). Entusiasta pero concreto.',
+  arquitecto:  'Eres El Arquitecto de Portafolios (cuantitativo, Markowitz). Preciso, datos primero.',
+  activista:   'Eres El Activista Paciente (alta convicción, Ackman). Franco, va al punto.',
+  lector:      'Eres El Lector del Ciclo (macro y renta fija chilena). Contextual, ciclo primero.',
 }
 
 const NIVEL_INSTRUCCIONES: Record<string, string> = {
-  principiante: 'Usa lenguaje simple, sin jerga financiera. Máximo 3 párrafos cortos. Explica cada concepto que menciones.',
-  intermedio:   'Usa terminología financiera básica con contexto. 3-4 párrafos. Puedes mencionar ratios pero explícalos brevemente.',
-  experto:      'Usa terminología técnica completa. 4-5 párrafos. Profundidad analítica, cita métricas específicas.',
+  principiante: 'Sin jerga. 2 párrafos máximo. Explica cada número brevemente.',
+  intermedio:   '3 párrafos cortos. Puedes usar términos como ROE, NII, UPA sin explicarlos.',
+  experto:      '3-4 párrafos densos. Datos, ratios, comparativa de peers. Sin relleno.',
 }
 
 async function getKeyMetrics(ticker: string) {
@@ -35,7 +35,7 @@ async function getKeyMetrics(ticker: string) {
 }
 
 async function getIncomeHighlights(ticker: string) {
-  const CAMPOS = ['utilidad_neta','total_ingresos_operacionales','provisiones_riesgo_credito','ingreso_neto_intereses']
+  const CAMPOS = ['utilidad_neta','total_ingresos_operacionales','provisiones_riesgo_credito','ingreso_neto_intereses','utilidad_por_accion']
   const { data } = await supabase
     .from('financial_data')
     .select('field, value, periodo')
@@ -57,11 +57,34 @@ async function genBrief(ticker: string, avatar: string, nivel: string, fecha: st
 
   const [km, is] = await Promise.all([getKeyMetrics(ticker), getIncomeHighlights(ticker)])
 
-  const prompt = AVATAR_PROMPTS[avatar] + `\n\nGenera un brief diario de análisis financiero para ${ticker} con fecha ${fecha}.\nNivel del usuario: ${nivel}. ${NIVEL_INSTRUCCIONES[nivel]}\n\nDatos financieros disponibles (últimos períodos):\nKey Metrics: ${JSON.stringify(km.slice(0, 12))}\nResultados destacados: ${JSON.stringify(is.slice(0, 8))}\n\nResponde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:\n{\n  "titular": "Título editorial impactante (máx 80 chars)",\n  "kicker": "Subtítulo contextual (máx 120 chars)",\n  "cuerpo": "Análisis principal según el nivel del usuario",\n  "cita_avatar": "Una frase breve y característica del avatar (máx 100 chars)",\n  "metricas_destacadas": ["métrica1: valor", "métrica2: valor", "métrica3: valor"]\n}`
+  const prompt = AVATAR_PROMPTS[avatar] + `
+
+Brief diario para ${ticker} · ${fecha} · Nivel: ${nivel}
+${NIVEL_INSTRUCCIONES[nivel]}
+
+REGLA CRÍTICA DE LONGITUD:
+- principiante: máximo 120 palabras en "cuerpo"
+- intermedio: máximo 180 palabras en "cuerpo"
+- experto: máximo 220 palabras en "cuerpo"
+Sé directo. Elimina todo lo que no aporte. El usuario lee en mobile en 3-5 minutos.
+NUNCA hagas recomendaciones de compra o venta.
+
+Datos financieros recientes:
+${JSON.stringify(is.slice(0, 6))}
+${JSON.stringify(km.slice(0, 8))}
+
+Responde SOLO con JSON válido, sin texto antes ni después:
+{
+  "titular": "máximo 70 chars — impactante y concreto",
+  "kicker": "máximo 90 chars — contexto en una línea",
+  "cuerpo": "el análisis — corto y al grano según nivel",
+  "cita_avatar": "máximo 80 chars — frase característica del avatar",
+  "metricas_destacadas": ["métrica: valor", "métrica: valor", "métrica: valor"]
+}`
 
   const r = await ai.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    max_tokens: 800,
     messages: [{ role: 'user', content: prompt }],
   })
 
@@ -74,7 +97,7 @@ async function genBrief(ticker: string, avatar: string, nivel: string, fecha: st
     fecha, ticker, avatar, nivel, ...parsed,
     tokens_used: r.usage.input_tokens + r.usage.output_tokens,
   })
-  console.log(`Brief OK: ${fecha}|${ticker}|${avatar}|${nivel}`)
+  console.log(`Brief OK: ${fecha}|${ticker}|${avatar}|${nivel} (${r.usage.output_tokens} tokens)`)
 }
 
 export function startBriefsCron() {
