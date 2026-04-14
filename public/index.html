@@ -3,14 +3,2204 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- SYMMETRY WEALTH PWA - LIVE VERSION -->
-<title>Symmetry Wealth — Cargando...</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0D1A">
+<title>Symmetry Wealth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --navy:      #0D0D1A;
+  --navy-mid:  #13132A;
+  --navy-soft: #1A1A35;
+  --navy-card: #16162E;
+  --gold:      #C9A54C;
+  --gold-dim:  rgba(201,165,76,0.15);
+  --gold-mid:  rgba(201,165,76,0.35);
+  --gold-glow: rgba(201,165,76,0.08);
+  --white:     #FFFFFF;
+  --off:       rgba(255,255,255,0.75);
+  --muted:     rgba(255,255,255,0.42);
+  --faint:     rgba(255,255,255,0.12);
+  --border:    rgba(255,255,255,0.08);
+  --border-g:  rgba(201,165,76,0.25);
+  --green:     #1BB37A;
+  --red:       #E05A3A;
+  --radius:    16px;
+  --radius-sm: 10px;
+  --safe-top:  env(safe-area-inset-top, 0px);
+  --safe-bot:  env(safe-area-inset-bottom, 0px);
+}
+
+/* ── RESET ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--navy); }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── PHONE SHELL (desktop preview) ──────────────────── */
+#app-shell {
+  width: 390px;
+  height: 844px;
+  background: var(--navy);
+  position: relative;
+  overflow: hidden;
+  border-radius: 48px;
+  box-shadow: 0 60px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,165,76,0.12), inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+@media (max-width: 430px) {
+  body { background: var(--navy); }
+  #app-shell { width: 100vw; height: 100dvh; border-radius: 0; box-shadow: none; }
+}
+
+/* ── SCREEN SYSTEM ───────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--navy);
+}
+.screen.active { display: flex; }
+
+/* ── TRANSITIONS ─────────────────────────────────────── */
+.screen.slide-in  { animation: slideIn  0.32s cubic-bezier(0.4,0,0.2,1) forwards; }
+.screen.slide-out { animation: slideOut 0.32s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes slideIn  { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-8%); opacity: 0; } }
+.screen.fade-in { animation: fadeIn 0.4s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── SCROLLABLE BODY ─────────────────────────────────── */
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-body::-webkit-scrollbar { display: none; }
+
+/* ── NAV BAR ─────────────────────────────────────────── */
+.topbar {
+  padding: 52px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.topbar-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+}
+.topbar-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--white);
+}
+.topbar-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--faint);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+.topbar-btn:active { background: var(--gold-dim); }
+
+/* ── BOTTOM NAV ──────────────────────────────────────── */
+.bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 12px 0 calc(12px + var(--safe-bot));
+  border-top: 1px solid var(--border);
+  background: rgba(13,13,26,0.95);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.nav-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  cursor: pointer; padding: 4px 12px;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.nav-item.active { opacity: 1; }
+.nav-item .nav-icon { font-size: 20px; }
+.nav-item .nav-label {
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.nav-item.active .nav-label { color: var(--gold); }
+
+/* ── CARDS ───────────────────────────────────────────── */
+.card {
+  background: var(--navy-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,165,76,0.2), transparent);
+}
+.card-gold {
+  border-color: var(--border-g);
+  background: linear-gradient(135deg, rgba(201,165,76,0.06), var(--navy-card));
+}
+
+/* ── TAGS & BADGES ───────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.badge-gold  { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-mid); }
+.badge-green { background: rgba(27,179,122,0.12); color: var(--green); }
+.badge-muted { background: var(--faint); color: var(--muted); }
+
+/* ── NUMBERS ─────────────────────────────────────────── */
+.mono { font-family: 'DM Mono', monospace; }
+.green { color: var(--green); }
+.red   { color: var(--red); }
+.gold  { color: var(--gold); }
+.muted { color: var(--muted); }
+
+/* ── DIVIDER ─────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+/* ── BTN ─────────────────────────────────────────────── */
+.btn-primary {
+  width: 100%; padding: 15px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+.btn-outline {
+  width: 100%; padding: 14px;
+  background: transparent;
+  color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-outline:active { background: var(--faint); }
+
+/* ── INPUT ───────────────────────────────────────────── */
+.input-field {
+  width: 100%; padding: 13px 16px;
+  background: var(--navy-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input-field:focus { border-color: var(--gold-mid); }
+.input-field::placeholder { color: var(--muted); }
+
+/* ── SPARKLINE ───────────────────────────────────────── */
+.sparkline-wrap { position: relative; height: 40px; }
+.sparkline-wrap svg { width: 100%; height: 100%; }
+
+/* ── AVATAR CARD ─────────────────────────────────────── */
+.avatar-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative; overflow: hidden;
+}
+.avatar-card:active { background: var(--faint); }
+.avatar-card.selected { border-color: var(--gold); }
+.avatar-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+/* ── CHAT BUBBLE ─────────────────────────────────────── */
+.bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+.bubble-user {
+  background: var(--gold);
+  color: var(--navy);
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+.bubble-ai {
+  background: var(--navy-soft);
+  border: 1px solid var(--border);
+  color: var(--off);
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+/* ── METRIC ROW ──────────────────────────────────────── */
+.metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-label { font-size: 12px; color: var(--muted); }
+.metric-value { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+
+/* ── LOADING DOTS ────────────────────────────────────── */
+.dots span {
+  display: inline-block; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--gold);
+  animation: dotBounce 1.2s infinite;
+  margin: 0 2px;
+}
+.dots span:nth-child(2) { animation-delay: 0.2s; }
+.dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-6px);opacity:1} }
+
+/* ── PILL SELECTOR ───────────────────────────────────── */
+.pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  padding: 6px 12px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s;
+}
+.pill.active { background: var(--gold-dim); border-color: var(--gold-mid); color: var(--gold); }
+
+/* ── SECTION HEADER ──────────────────────────────────── */
+.section-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px; font-weight: 600;
+}
+.section-link { font-size: 11px; color: var(--gold); cursor: pointer; }
+
+/* ── ONBOARDING ──────────────────────────────────────── */
+.ob-progress { display: flex; gap: 4px; padding: 0 24px; margin-bottom: 32px; }
+.ob-dot { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+.ob-dot.done { background: var(--gold); }
+
+/* ── REAL ESTATE ─────────────────────────────────────── */
+.re-calc-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+.re-calc-label { font-size: 12px; color: var(--muted); }
+.re-calc-val { font-family: 'DM Mono', monospace; font-size: 13px; }
+.re-highlight { background: var(--gold-dim); border-radius: 8px; padding: 12px 14px; }
+
+/* ── TICKER HEADER ───────────────────────────────────── */
+.ticker-hero {
+  padding: 0 20px 16px;
+  background: linear-gradient(180deg, var(--navy-mid) 0%, transparent 100%);
+}
+.price-big { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; }
+.price-change { font-size: 12px; padding: 3px 8px; border-radius: 6px; }
+.price-up   { background: rgba(27,179,122,0.15); color: var(--green); }
+.price-down { background: rgba(224,90,58,0.15); color: var(--red); }
+
+/* ── PROPOSAL (ASESOR) ───────────────────────────────── */
+.proposal-item {
+  padding: 12px; border-radius: var(--radius-sm);
+  background: var(--navy-soft);
+  border: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.proposal-action {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.action-buy  { background: rgba(27,179,122,0.2);  color: var(--green); }
+.action-sell { background: rgba(224,90,58,0.2);   color: var(--red); }
+.action-hold { background: rgba(201,165,76,0.15); color: var(--gold); }
+
+/* ── BRIEF CARD ──────────────────────────────────────── */
+.brief-card {
+  margin: 0 20px 16px;
+  padding: 20px;
+  background: var(--navy-card);
+  border: 1px solid var(--border-g);
+  border-radius: 20px;
+  position: relative; overflow: hidden;
+}
+.brief-card::after {
+  content: '';
+  position: absolute;
+  top: -40%; right: -20%;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,165,76,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.brief-kicker { font-size: 10px; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+.brief-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; }
+.brief-body { font-size: 13px; line-height: 1.65; color: var(--off); }
+.brief-quote {
+  margin-top: 14px; padding: 12px 14px;
+  border-left: 2px solid var(--gold);
+  background: var(--gold-glow);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 12px; color: var(--muted);
+}
+
+/* ── EDITORIAL ───────────────────────────────────────── */
+.editorial-hero {
+  height: 180px;
+  background: linear-gradient(135deg, #1a0a30, #0a1a30);
+  position: relative; overflow: hidden;
+  display: flex; align-items: flex-end; padding: 20px;
+}
+.editorial-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(13,13,26,0.9) 100%);
+}
+.editorial-tag { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.editorial-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; line-height: 1.25; position: relative; z-index: 1; }
+
+/* ── SPLASH ──────────────────────────────────────────── */
+#screen-splash {
+  background: radial-gradient(ellipse at 30% 20%, #1a1040 0%, var(--navy) 60%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+}
+.splash-logo-wrap { position: relative; margin-bottom: 24px; }
+.splash-logo-img { width: 72px; height: 72px; }
+.splash-rings {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+}
+.splash-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(201,165,76,0.15);
+  animation: ringPulse 2.4s ease-out infinite;
+  transform: translate(-50%,-50%);
+}
+@keyframes ringPulse { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)} 50%{opacity:0.5} 100%{opacity:0;transform:translate(-50%,-50%) scale(2)} }
+.splash-name { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 600; letter-spacing: 0.06em; color: var(--white); margin-bottom: 6px; }
+.splash-sub  { font-size: 12px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 52px; }
+.splash-load { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.splash-bar-wrap { width: 120px; height: 2px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+.splash-bar { height: 100%; width: 0; background: var(--gold); border-radius: 2px; animation: barFill 2.2s ease-out forwards; }
+@keyframes barFill { 0%{width:0} 100%{width:100%} }
+.splash-status { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
+
+/* ── ONBOARDING ──────────────────────────────────────── */
+#screen-onboarding {
+  padding: 52px 24px 32px;
+  display: flex; flex-direction: column;
+}
+.ob-step { display: none; flex-direction: column; flex: 1; }
+.ob-step.active { display: flex; }
+.ob-emoji { font-size: 42px; margin-bottom: 16px; }
+.ob-headline { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600; line-height: 1.25; margin-bottom: 10px; }
+.ob-desc { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+.ob-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.ob-option {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 12px;
+}
+.ob-option:active { background: var(--faint); }
+.ob-option.selected { border-color: var(--gold); background: var(--gold-dim); }
+.ob-option-icon { font-size: 20px; }
+.ob-option-text { font-size: 14px; font-weight: 500; }
+.ob-option-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.ob-cta { margin-top: auto; }
+
+/* ── HOME ────────────────────────────────────────────── */
+.home-greeting { padding: 0 20px 16px; }
+.home-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; }
+.home-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.ticker-strip {
+  display: flex; gap: 10px;
+  padding: 0 20px 16px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.ticker-strip::-webkit-scrollbar { display: none; }
+.ticker-chip {
+  flex-shrink: 0;
+  padding: 8px 14px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--navy-card);
+  cursor: pointer; transition: border-color 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.ticker-chip:active { border-color: var(--gold-mid); }
+.ticker-name { font-size: 12px; font-weight: 600; }
+.ticker-price { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+.ticker-var   { font-size: 10px; font-weight: 600; }
+
+.avatar-strip {
+  display: flex; gap: 8px;
+  padding: 0 20px 16px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.avatar-strip::-webkit-scrollbar { display: none; }
+.avatar-chip {
+  flex-shrink: 0; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; cursor: pointer;
+  padding: 4px;
+}
+.avatar-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  background: var(--navy-soft);
+  transition: border-color 0.2s;
+}
+.avatar-chip.active .avatar-ring { border-color: var(--gold); }
+.avatar-chip-name { font-size: 9px; color: var(--muted); text-align: center; max-width: 54px; }
+
+/* ── METRICS ─────────────────────────────────────────── */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); margin: 0 20px; }
+.tab {
+  padding: 10px 16px; font-size: 12px; font-weight: 500;
+  color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.2s; margin-bottom: -1px;
+}
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.chart-area {
+  margin: 16px 20px; height: 120px;
+  background: var(--navy-soft);
+  border-radius: var(--radius-sm);
+  position: relative; overflow: hidden;
+}
+.chart-area svg { width: 100%; height: 100%; }
+
+/* ── PORTFOLIO ───────────────────────────────────────── */
+.position-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+}
+.position-row:active { background: var(--faint); }
+.position-logo {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--navy-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  border: 1px solid var(--border);
+  color: var(--gold); font-size: 11px;
+}
+.position-name { font-size: 14px; font-weight: 500; }
+.position-qty  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.position-val  { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; text-align: right; }
+.position-ret  { font-size: 11px; text-align: right; margin-top: 2px; }
+
+/* ── REAL ESTATE SCREEN ──────────────────────────────── */
+.re-hero {
+  height: 140px;
+  background: linear-gradient(135deg, #0a1a0f, #051220);
+  margin: 0 20px 16px;
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  justify-content: flex-end; padding: 16px;
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(27,179,122,0.2);
+}
+.re-hero::before {
+  content: '🏢';
+  position: absolute; top: 16px; right: 16px;
+  font-size: 48px; opacity: 0.3;
+}
+
+/* ── FLOAT BUTTON ────────────────────────────────────── */
+.fab {
+  position: absolute; bottom: 80px; right: 20px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--gold);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--navy);
+  box-shadow: 0 4px 20px rgba(201,165,76,0.4);
+  z-index: 50; transition: transform 0.2s;
+}
+.fab:active { transform: scale(0.92); }
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200; display: none;
+  align-items: flex-end;
+}
+.modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+.modal-sheet {
+  width: 100%; background: var(--navy-mid);
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid var(--border-g);
+  padding: 20px;
+  animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width: 36px; height: 3px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+
+/* ── CHAT INPUT ──────────────────────────────────────── */
+.chat-input-wrap {
+  display: flex; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--navy-mid);
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1; background: var(--navy-soft);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 10px 14px;
+  color: var(--white); font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none; resize: none; max-height: 80px;
+}
+.chat-input:focus { border-color: var(--gold-mid); }
+.chat-send {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--gold); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--navy);
+  align-self: flex-end; flex-shrink: 0;
+}
+
+/* ── EEFF TABS ───────────────────────────────────────── */
+.eeff-tab-row { display: flex; gap: 6px; padding: 12px 20px; overflow-x: auto; scrollbar-width: none; }
+.eeff-tab-row::-webkit-scrollbar { display: none; }
+.eeff-tab {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s;
+}
+.eeff-tab.active { background: var(--gold-dim); border-color: var(--gold-mid); color: var(--gold); }
+
+/* ── ASESOR ──────────────────────────────────────────── */
+.client-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.client-row:active { background: var(--faint); }
+.client-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--navy-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; border: 1px solid var(--border);
+}
+.client-name { font-size: 14px; font-weight: 500; }
+.client-info { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── NOTIFICATION DOT ────────────────────────────────── */
+.notif-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gold); flex-shrink: 0;
+}
+
+</style>
 </head>
 <body>
-<div id="loading" style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0D0D1A;color:#C9A54C;font-family:sans-serif;font-size:14px;">Cargando Symmetry Wealth...</div>
+
+<div id="app-shell">
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 1 — SPLASH
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen active fade-in" id="screen-splash">
+    <div class="splash-logo-wrap">
+      <div class="splash-rings">
+        <div class="splash-ring" style="width:100px;height:100px;animation-delay:0s"></div>
+        <div class="splash-ring" style="width:140px;height:140px;animation-delay:0.6s"></div>
+        <div class="splash-ring" style="width:180px;height:180px;animation-delay:1.2s"></div>
+      </div>
+      <div style="width:72px;height:72px;background:var(--gold-dim);border:2px solid var(--gold-mid);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative;z-index:1;">⚖️</div>
+    </div>
+    <div class="splash-name">Symmetry Wealth</div>
+    <div class="splash-sub">Inteligencia Financiera</div>
+    <div class="splash-load">
+      <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+      <div class="splash-status">Iniciando plataforma...</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 2 — ONBOARDING
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-onboarding">
+    <div class="ob-progress">
+      <div class="ob-dot done" id="ob-d0"></div>
+      <div class="ob-dot" id="ob-d1"></div>
+      <div class="ob-dot" id="ob-d2"></div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="ob-step active" id="ob-step-0">
+      <div class="ob-emoji">👋</div>
+      <div class="ob-headline">Bienvenido a Symmetry Wealth</div>
+      <div class="ob-desc">La plataforma de inteligencia financiera para el mercado NUAM. Análisis educativo, nunca recomendaciones.</div>
+      <div class="ob-options">
+        <div class="ob-option selected" onclick="selectOb(this)">
+          <div class="ob-option-icon">📱</div>
+          <div>
+            <div class="ob-option-text">Inversionista Retail</div>
+            <div class="ob-option-sub">Quiero entender mis inversiones</div>
+          </div>
+        </div>
+        <div class="ob-option" onclick="selectOb(this)">
+          <div class="ob-option-icon">💼</div>
+          <div>
+            <div class="ob-option-text">Asesor Acreditado</div>
+            <div class="ob-option-sub">Gestiono carteras de clientes</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-cta">
+        <button class="btn-primary" onclick="goObStep(1)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="ob-step" id="ob-step-1">
+      <div class="ob-emoji">📊</div>
+      <div class="ob-headline">¿Cuál es tu nivel de experiencia?</div>
+      <div class="ob-desc">Esto define la profundidad de los análisis que recibirás.</div>
+      <div class="ob-options">
+        <div class="ob-option selected" onclick="selectOb(this)">
+          <div class="ob-option-icon">🌱</div>
+          <div>
+            <div class="ob-option-text">Principiante</div>
+            <div class="ob-option-sub">Explíname todo sin jerga</div>
+          </div>
+        </div>
+        <div class="ob-option" onclick="selectOb(this)">
+          <div class="ob-option-icon">📈</div>
+          <div>
+            <div class="ob-option-text">Intermedio</div>
+            <div class="ob-option-sub">Conozco los conceptos básicos</div>
+          </div>
+        </div>
+        <div class="ob-option" onclick="selectOb(this)">
+          <div class="ob-option-icon">🎯</div>
+          <div>
+            <div class="ob-option-text">Experto</div>
+            <div class="ob-option-sub">Dame métricas detalladas</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-cta">
+        <button class="btn-primary" onclick="goObStep(2)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-emoji">🤖</div>
+      <div class="ob-headline">Elige tu avatar analista</div>
+      <div class="ob-desc">Cada avatar tiene una filosofía distinta. Puedes cambiar esto después.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        <div class="avatar-card card-gold selected" onclick="selectAvatar(this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar-icon" style="background:rgba(201,165,76,0.15);">⚖️</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;">El Guardián del Valor</div>
+              <div style="font-size:11px;color:var(--muted);">Graham · Buffett · Value</div>
+            </div>
+            <div class="badge badge-gold" style="margin-left:auto;">Value</div>
+          </div>
+        </div>
+        <div class="avatar-card" onclick="selectAvatar(this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar-icon" style="background:rgba(27,179,122,0.1);">🎯</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;">El Cazador de Crecimiento</div>
+              <div style="font-size:11px;color:var(--muted);">Peter Lynch · GARP</div>
+            </div>
+            <div class="badge badge-green" style="margin-left:auto;">GARP</div>
+          </div>
+        </div>
+        <div class="avatar-card" onclick="selectAvatar(this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar-icon" style="background:rgba(83,74,183,0.15);">📐</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;">El Arquitecto</div>
+              <div style="font-size:11px;color:var(--muted);">Markowitz · Quant</div>
+            </div>
+            <div class="badge badge-muted" style="margin-left:auto;">Quant</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-cta">
+        <button class="btn-primary" onclick="goHome()">Comenzar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 3 — HOME / BRIEF DIARIO
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-home">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-logo">⚖️ SW</div>
+      <div style="display:flex;gap:8px;">
+        <div class="topbar-btn" onclick="showScreen('screen-notif')">🔔</div>
+        <div class="topbar-btn" onclick="showModal('modal-profile')">👤</div>
+      </div>
+    </div>
+
+    <div class="scroll-body">
+      <!-- Greeting -->
+      <div class="home-greeting">
+        <div class="home-name">Buenos días, JuanJo</div>
+        <div class="home-date">Domingo 12 Abril · Santiago, Chile</div>
+      </div>
+
+      <!-- Ticker strip -->
+      <div class="ticker-strip">
+        <div class="ticker-chip active" data-ticker="CHILE.SN" onclick="selectTicker('CHILE.SN'); showScreen('screen-metricas')">
+          <div>
+            <div class="ticker-name">CHILE</div>
+            <div id="price-chile" class="ticker-price mono">—</div>
+          </div>
+          <div id="var-chile" class="ticker-var">B. Chile</div>
+        </div>
+        <div class="ticker-chip" data-ticker="BSANTANDER.SN" onclick="selectTicker('BSANTANDER.SN'); showScreen('screen-metricas')">
+          <div>
+            <div class="ticker-name">BSANTANDER</div>
+            <div id="price-santander" class="ticker-price mono">—</div>
+          </div>
+          <div id="var-santander" class="ticker-var">Santander</div>
+        </div>
+        <div class="ticker-chip" style="opacity:0.5;">
+          <div>
+            <div class="ticker-name">+ Más</div>
+            <div class="ticker-price">NUAM 2025</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avatar selector -->
+      <div style="padding: 0 20px 8px;">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">Perspectiva del día</div>
+        <div class="avatar-strip">
+          <div class="avatar-chip active" onclick="selectHomeAvatar(this,'guardian')">
+            <div class="avatar-ring">⚖️</div>
+            <div class="avatar-chip-name">Guardián</div>
+          </div>
+          <div class="avatar-chip" onclick="selectHomeAvatar(this,'cazador')">
+            <div class="avatar-ring">🎯</div>
+            <div class="avatar-chip-name">Cazador</div>
+          </div>
+          <div class="avatar-chip" onclick="selectHomeAvatar(this,'arquitecto')">
+            <div class="avatar-ring">📐</div>
+            <div class="avatar-chip-name">Arquitecto</div>
+          </div>
+          <div class="avatar-chip" onclick="selectHomeAvatar(this,'activista')">
+            <div class="avatar-ring">🔥</div>
+            <div class="avatar-chip-name">Activista</div>
+          </div>
+          <div class="avatar-chip" onclick="selectHomeAvatar(this,'lector')">
+            <div class="avatar-ring">🌊</div>
+            <div class="avatar-chip-name">Lector</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brief card -->
+      <div class="brief-card" id="brief-container">
+        <div class="brief-kicker">CHILE.SN · IPSA · Banco de Chile</div>
+        <div class="brief-title">"El margen de seguridad de Enel Chile: ¿precio castigado u oportunidad?"</div>
+        <div class="brief-body">Enel Chile cotiza a un P/E de 11.2x frente a su media histórica de 14.8x, con una deuda/equity que se ha reducido significativamente desde 2022. La tesis de valor clásica requiere paciencia: el mercado aún descuenta la transición energética como riesgo, no como catalizador.</div>
+        <div class="brief-quote">"El precio es lo que pagas. El valor es lo que obtienes." — El Guardián del Valor</div>
+      </div>
+
+      <!-- Ir al chat -->
+      <div style="margin: 0 20px 16px;">
+        <button class="btn-outline" onclick="showScreen('screen-chat')" style="font-size:13px;">
+          💬 Preguntar al Guardián del Valor
+        </button>
+      </div>
+
+      <!-- Editorial preview -->
+      <div style="padding: 0 20px;">
+        <div class="section-hdr">
+          <div class="section-title">Editorial</div>
+          <div class="section-link" onclick="showScreen('screen-editorial')">Ver todo →</div>
+        </div>
+        <div class="card card-gold" onclick="showScreen('screen-editorial')" style="cursor:pointer;">
+          <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">ANÁLISIS · ENERGÍA</div>
+          <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;line-height:1.35;margin-bottom:8px;">La paradoja energética chilena: entre la transición y el dividendo</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;">El sector eléctrico del IPSA enfrenta un año bisagra donde la narrativa ESG y la rentabilidad para el accionista colisionan...</div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <div class="badge badge-muted">8 min</div>
+            <div class="badge badge-gold">⚖️ Guardián</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 20px;"></div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="navTo('screen-home',this)">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-label">Inicio</div>
+      </div>
+      <div class="nav-item" onclick="navTo('screen-metricas',this)">
+        <div class="nav-icon">📊</div>
+        <div class="nav-label">Métricas</div>
+      </div>
+      <div class="nav-item" onclick="navTo('screen-portfolio',this)">
+        <div class="nav-icon">💼</div>
+        <div class="nav-label">Cartera</div>
+      </div>
+      <div class="nav-item" onclick="navTo('screen-realestate',this)">
+        <div class="nav-icon">🏢</div>
+        <div class="nav-label">Real Estate</div>
+      </div>
+      <div class="nav-item" onclick="navTo('screen-asesor',this)">
+        <div class="nav-icon">🎯</div>
+        <div class="nav-label">Asesor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 4 — MÉTRICAS FINANCIERAS
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-metricas">
+    <div class="topbar">
+      <div class="topbar-btn" onclick="goBack()">←</div>
+      <div class="topbar-title" id="eeff-topbar-title">CHILE.SN</div>
+      <div class="topbar-btn" onclick="showScreen('screen-eeff')">📄</div>
+    </div>
+
+    <div class="scroll-body">
+      <!-- Price hero -->
+      <div class="ticker-hero">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+          <div class="price-big">$ 68.50</div>
+          <div class="price-change price-up">+1.24% ▲</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);">CLP · Bolsa de Santiago · Cierre 11 Abr</div>
+      </div>
+
+      <!-- Period pills -->
+      <div style="padding: 12px 20px 8px;">
+        <div class="pills">
+          <div class="pill" onclick="selectChartPeriod(this,'3A')">3A</div>
+          <div class="pill active" onclick="selectChartPeriod(this,'5A')">5A</div>
+          <div class="pill" onclick="selectChartPeriod(this,'10A')">10A</div>
+          <div class="pill" onclick="selectChartPeriod(this,'Todo')">Todo</div>
+        </div>
+      </div>
+
+      <!-- Chart dual Precio + EPS -->
+      <div class="chart-area" style="position:relative;">
+        <svg id="dual-chart" viewBox="0 0 390 120" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="chartGradPrice" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#C9A54C" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#C9A54C" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="chartGradEPS" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1BB37A" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#1BB37A" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="chartGradFCF" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5B8DEF" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#5B8DEF" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Líneas de guía horizontales -->
+          <line x1="0" y1="30" x2="390" y2="30" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="0" y1="60" x2="390" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="0" y1="90" x2="390" y2="90" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <!-- Área precio (oro) -->
+          <path id="chart-price-area" d="" fill="url(#chartGradPrice)"/>
+          <!-- Área EPS (verde) -->
+          <path id="chart-eps-area" d="" fill="url(#chartGradEPS)"/>
+          <!-- Línea precio -->
+          <path id="chart-price-line" d="" fill="none" stroke="#C9A54C" stroke-width="2" stroke-linecap="round"/>
+          <!-- Línea EPS -->
+          <path id="chart-eps-line" d="" fill="none" stroke="#1BB37A" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3"/>
+          <!-- Área FCF/acción (azul) -->
+          <path id="chart-fcf-area" d="" fill="url(#chartGradFCF)"/>
+          <!-- Línea FCF/acción -->
+          <path id="chart-fcf-line" d="" fill="none" stroke="#5B8DEF" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2,4"/>
+          <!-- Cargando -->
+          <text id="chart-loading" x="195" y="65" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="10" font-family="DM Sans">Cargando datos...</text>
+        </svg>
+        <!-- Leyenda -->
+        <div style="position:absolute;bottom:6px;right:8px;display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:3px;">
+            <div style="width:10px;height:2px;background:#C9A54C;border-radius:1px;"></div>
+            <div style="font-size:8px;color:var(--muted);font-family:'DM Mono',monospace;">Precio</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px;">
+            <div style="width:10px;height:0;border-top:2px dashed #1BB37A;"></div>
+            <div style="font-size:8px;color:var(--muted);font-family:'DM Mono',monospace;">EPS</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px;">
+            <div style="width:10px;height:0;border-top:2px dotted #5B8DEF;"></div>
+            <div style="font-size:8px;color:var(--muted);font-family:'DM Mono',monospace;">FCF/acc</div>
+          </div>
+        </div>
+        <!-- Labels años -->
+        <div id="chart-year-labels" style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;"></div>
+      </div>
+
+      <!-- Key metrics dinámicos -->
+      <div style="padding: 8px 20px;">
+        <div class="section-hdr" style="margin-bottom:8px;">
+          <div class="section-title">Key Metrics</div>
+          <div id="km-badge" class="badge badge-gold">⚖️ Value</div>
+        </div>
+        <div class="card" id="km-card">
+          <div class="metric-row">
+            <div class="metric-label">ROE</div>
+            <div class="metric-value mono green" id="km-roe">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">ROA</div>
+            <div class="metric-value mono" id="km-roa">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Eficiencia</div>
+            <div class="metric-value mono" id="km-efic">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">NIM</div>
+            <div class="metric-value mono gold" id="km-nim">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Margen Neto</div>
+            <div class="metric-value mono" id="km-margen">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Leverage</div>
+            <div class="metric-value mono" id="km-leverage">—</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">Provisión / Coloc.</div>
+            <div class="metric-value mono" id="km-provision">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brief avatar insight -->
+      <div style="padding: 8px 20px 20px;">
+        <div class="card card-gold" style="cursor:pointer;" onclick="showScreen('screen-chat')">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="font-size:18px;">⚖️</div>
+            <div style="font-size:11px;font-weight:600;color:var(--gold);">GUARDIÁN DEL VALOR</div>
+          </div>
+          <div id="km-insight" style="font-size:13px;color:var(--off);line-height:1.55;">Cargando análisis... Toca para conversar con el avatar →</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('screen-home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+      <div class="nav-item active" onclick="navTo('screen-metricas',this)"><div class="nav-icon">📊</div><div class="nav-label">Métricas</div></div>
+      <div class="nav-item" onclick="navTo('screen-portfolio',this)"><div class="nav-icon">💼</div><div class="nav-label">Cartera</div></div>
+      <div class="nav-item" onclick="navTo('screen-realestate',this)"><div class="nav-icon">🏢</div><div class="nav-label">Real Estate</div></div>
+      <div class="nav-item" onclick="navTo('screen-asesor',this)"><div class="nav-icon">🎯</div><div class="nav-label">Asesor</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 5 — EEFF + CHAT IA
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-eeff">
+    <div class="topbar">
+      <div class="topbar-btn" onclick="goBack()">←</div>
+      <div class="topbar-title">Estados Financieros</div>
+      <div style="width:36px;"></div>
+    </div>
+
+    <div class="eeff-tab-row">
+      <div class="eeff-tab active" onclick="selectEeffTab(this,'is')">Inc. Statement</div>
+      <div class="eeff-tab" onclick="selectEeffTab(this,'bs')">Balance Sheet</div>
+      <div class="eeff-tab" onclick="selectEeffTab(this,'cf')">Cash Flow</div>
+    </div>
+
+    <div class="scroll-body" id="eeff-body">
+      <div style="padding: 8px 20px;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:12px;letter-spacing:0.1em;">CHILE.SN · Income Statement · MM CLP</div>
+        <div class="card">
+          <div class="metric-row"><div class="metric-label">Ingresos</div><div class="metric-value mono">4,821,450</div></div>
+          <div class="metric-row"><div class="metric-label">EBITDA</div><div class="metric-value mono green">1,513,535</div></div>
+          <div class="metric-row"><div class="metric-label">EBIT</div><div class="metric-value mono">982,100</div></div>
+          <div class="metric-row"><div class="metric-label">Resultado Neto</div><div class="metric-value mono green">644,230</div></div>
+          <div class="metric-row"><div class="metric-label">UPA</div><div class="metric-value mono gold">6.11</div></div>
+          <div class="metric-row"><div class="metric-label">Margen Neto</div><div class="metric-value mono">13.4%</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--muted);text-align:center;">Fuente: CMF Chile · Informe Anual 2024 · Pág. 48</div>
+      </div>
+    </div>
+
+    <!-- Chat IA -->
+    <div style="padding: 8px 16px; border-top: 1px solid var(--border); background: var(--navy-mid); flex-shrink:0;">
+      <div style="font-size:10px;color:var(--gold);margin-bottom:6px;letter-spacing:0.1em;">⚖️ PREGUNTA AL GUARDIÁN</div>
+      <div id="eeff-chat-msgs" style="max-height:80px;overflow-y:auto;margin-bottom:8px;"></div>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea class="chat-input" id="eeff-input" placeholder="¿Qué significa el EBITDA para un principiante?" rows="1"></textarea>
+      <div class="chat-send" onclick="sendEeffChat()">↑</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 6 — CHAT COMPLETO CON AVATAR
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-chat">
+    <div class="topbar" style="background:var(--navy-mid);border-bottom:1px solid var(--border);">
+      <div class="topbar-btn" onclick="goBack()">←</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:18px;">⚖️</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;">El Guardián del Valor</div>
+          <div style="font-size:10px;color:var(--green);">● En línea</div>
+        </div>
+      </div>
+      <div class="topbar-btn">⋯</div>
+    </div>
+
+    <div class="scroll-body" id="chat-messages" style="padding: 16px;">
+      <!-- Mensaje inicial del avatar -->
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:36px;margin-bottom:8px;">⚖️</div>
+        <div style="font-size:12px;color:var(--muted);">El Guardián del Valor está listo</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Análisis basado en datos reales CMF</div>
+      </div>
+
+      <div class="bubble bubble-ai">Hola. Soy El Guardián del Valor, inspirado en la escuela de Graham y Buffett. Analizo empresas buscando valor intrínseco con margen de seguridad. ¿Sobre qué quieres que conversemos hoy?</div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        <div class="pill active" onclick="quickChat(this)" style="font-size:10px;">¿Cómo está el ROE de CHILE?</div>
+        <div class="pill" onclick="quickChat(this)" style="font-size:10px;">¿Qué es el P/E?</div>
+        <div class="pill" onclick="quickChat(this)" style="font-size:10px;">Compara CHILE vs BSANTANDER</div>
+      </div>
+    </div>
+
+    <div class="chat-input-wrap">
+      <textarea class="chat-input" id="chat-input" placeholder="Pregunta al Guardián del Valor..." rows="1"></textarea>
+      <div class="chat-send" onclick="sendChat()">↑</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 7 — PORTAFOLIO
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-portfolio">
+    <div class="topbar">
+      <div class="topbar-logo">⚖️ SW</div>
+      <div class="topbar-title">Mi Cartera</div>
+      <div class="topbar-btn" onclick="showModal('modal-add-position')">+</div>
+    </div>
+
+    <div class="scroll-body">
+      <!-- Resumen -->
+      <div style="margin: 0 20px 16px; padding: 20px; background: linear-gradient(135deg, var(--navy-soft), var(--navy-card)); border-radius: var(--radius); border: 1px solid var(--border-g);">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Valor total de cartera</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:600;">$14,823,400</div>
+        <div style="font-size:12px;color:var(--green);margin-top:4px;">▲ +8.4% desde inicio · $1,145,680</div>
+        <div class="divider" style="margin: 12px 0;"></div>
+        <div style="display:flex;gap:20px;">
+          <div><div style="font-size:10px;color:var(--muted);">Retorno YTD</div><div style="font-size:14px;color:var(--green);font-weight:600;">+4.2%</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Posiciones</div><div style="font-size:14px;font-weight:600;">3</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Dividendos</div><div style="font-size:14px;color:var(--gold);font-weight:600;">$320K</div></div>
+        </div>
+      </div>
+
+      <div style="padding: 0 20px; margin-bottom: 8px; font-size:11px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase;">Posiciones</div>
+
+      <div class="position-row" onclick="showScreen('screen-metricas')">
+        <div class="position-logo">ENEL</div>
+        <div style="flex:1;">
+          <div class="position-name">Enel Chile</div>
+          <div class="position-qty">5,200 acciones · Art. 107</div>
+        </div>
+        <div>
+          <div class="position-val">$8,840,000</div>
+          <div class="position-ret green">+12.3%</div>
+        </div>
+      </div>
+
+      <div class="position-row" onclick="showScreen('screen-metricas')">
+        <div class="position-logo">COLB</div>
+        <div style="flex:1;">
+          <div class="position-name">Colbún</div>
+          <div class="position-qty">3,100 acciones · Art. 107</div>
+        </div>
+        <div>
+          <div class="position-val">$4,411,300</div>
+          <div class="position-ret red">-2.1%</div>
+        </div>
+      </div>
+
+      <div class="position-row">
+        <div class="position-logo" style="font-size:9px;">CASH</div>
+        <div style="flex:1;">
+          <div class="position-name">Liquidez</div>
+          <div class="position-qty">CLP disponible</div>
+        </div>
+        <div>
+          <div class="position-val">$1,572,100</div>
+          <div class="position-ret muted">10.6%</div>
+        </div>
+      </div>
+
+      <!-- Tributación -->
+      <div style="margin: 16px 20px;">
+        <div class="card card-gold">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div>📋</div>
+            <div style="font-size:12px;font-weight:600;color:var(--gold);">Tributación Art. 107 LIR</div>
+          </div>
+          <div style="font-size:12px;color:var(--off);line-height:1.6;">Tus posiciones en CHILE.SN y BSANTANDER.SN califican para el régimen especial del Art. 107. Ganancia de capital: <span class="gold mono">10% fijo</span> si vendes con presencia bursátil ≥ 25%.</div>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <button class="fab" onclick="showModal('modal-add-position')">+</button>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('screen-home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+      <div class="nav-item" onclick="navTo('screen-metricas',this)"><div class="nav-icon">📊</div><div class="nav-label">Métricas</div></div>
+      <div class="nav-item active" onclick="navTo('screen-portfolio',this)"><div class="nav-icon">💼</div><div class="nav-label">Cartera</div></div>
+      <div class="nav-item" onclick="navTo('screen-realestate',this)"><div class="nav-icon">🏢</div><div class="nav-label">Real Estate</div></div>
+      <div class="nav-item" onclick="navTo('screen-asesor',this)"><div class="nav-icon">🎯</div><div class="nav-label">Asesor</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 8 — REAL ESTATE
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-realestate">
+    <div class="topbar">
+      <div class="topbar-logo">⚖️ SW</div>
+      <div class="topbar-title">Real Estate</div>
+      <div class="topbar-btn" onclick="showModal('modal-add-property')">+</div>
+    </div>
+
+    <div class="scroll-body">
+      <!-- Propiedad existente -->
+      <div class="re-hero">
+        <div style="position:relative;z-index:1;">
+          <div style="font-size:10px;color:rgba(27,179,122,0.8);letter-spacing:0.12em;margin-bottom:4px;">DEPARTAMENTO · PROVIDENCIA</div>
+          <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;">Av. Providencia 1200, Dpto. 8B</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">UF 2,850 · Valorización 2024</div>
+        </div>
+      </div>
+
+      <!-- Métricas del inmueble -->
+      <div style="padding: 0 20px 16px;">
+        <div class="card">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:0.1em;text-transform:uppercase;">Análisis de Rentabilidad</div>
+
+          <div class="re-highlight" style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:10px;color:var(--muted);">Rentabilidad Bruta</div>
+                <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--gold);">5.8%</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:10px;color:var(--muted);">Cap Rate Neto</div>
+                <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--green);">4.1%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="re-calc-row"><div class="re-calc-label">Canon mensual</div><div class="re-calc-val mono">UF 8.2 / mes</div></div>
+          <div class="re-calc-row"><div class="re-calc-label">Cuota hipoteca</div><div class="re-calc-val mono red">- UF 4.8</div></div>
+          <div class="re-calc-row"><div class="re-calc-label">Gastos comunes</div><div class="re-calc-val mono red">- UF 0.6</div></div>
+          <div class="re-calc-row"><div class="re-calc-label">Contribuciones</div><div class="re-calc-val mono red">- UF 0.3</div></div>
+          <div class="divider"></div>
+          <div class="re-calc-row">
+            <div style="font-size:13px;font-weight:600;">Flujo neto mensual</div>
+            <div class="re-calc-val mono green" style="font-size:15px;font-weight:600;">+ UF 2.5</div>
+          </div>
+          <div class="re-calc-row"><div class="re-calc-label">ROE sobre patrimonio</div><div class="re-calc-val mono gold">8.4%</div></div>
+        </div>
+
+        <div style="margin-top:12px;" class="card card-gold">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <div>🌊</div>
+            <div style="font-size:11px;font-weight:600;color:var(--gold);">LECTOR DEL CICLO</div>
+          </div>
+          <div style="font-size:12px;color:var(--off);line-height:1.55;">Con TPM al 5.5% y UF proyectada a 4.2% de variación anual, tu cap rate neto de 4.1% sigue siendo competitivo frente a la renta fija de corto plazo. Clave: el spread se comprime en 2025.</div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button class="btn-outline" onclick="showModal('modal-add-property')" style="font-size:13px;">+ Agregar propiedad</button>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('screen-home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+      <div class="nav-item" onclick="navTo('screen-metricas',this)"><div class="nav-icon">📊</div><div class="nav-label">Métricas</div></div>
+      <div class="nav-item" onclick="navTo('screen-portfolio',this)"><div class="nav-icon">💼</div><div class="nav-label">Cartera</div></div>
+      <div class="nav-item active" onclick="navTo('screen-realestate',this)"><div class="nav-icon">🏢</div><div class="nav-label">Real Estate</div></div>
+      <div class="nav-item" onclick="navTo('screen-asesor',this)"><div class="nav-icon">🎯</div><div class="nav-label">Asesor</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 9 — EDITORIAL
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-editorial">
+    <div class="topbar">
+      <div class="topbar-btn" onclick="goBack()">←</div>
+      <div class="topbar-title">Editorial</div>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="scroll-body">
+      <div class="editorial-hero">
+        <div class="editorial-overlay"></div>
+        <div style="position:relative;z-index:1;">
+          <div class="editorial-tag">ANÁLISIS · ENERGÍA · IPSA</div>
+          <div class="editorial-title">La paradoja energética chilena: entre la transición y el dividendo</div>
+        </div>
+      </div>
+      <div style="padding: 16px 20px;">
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <div class="badge badge-gold">⚖️ Guardián del Valor</div>
+          <div class="badge badge-muted">8 min lectura</div>
+          <div class="badge badge-muted">12 Abr 2025</div>
+        </div>
+        <div style="font-size:14px;line-height:1.75;color:var(--off);">
+          <p style="margin-bottom:14px;">El sector eléctrico chileno vive una tensión inédita: los grandes actores del IPSA —Enel Chile y Colbún— son simultáneamente los protagonistas de la transición energética y los principales pagadores de dividendos de la Bolsa de Santiago.</p>
+          <p style="margin-bottom:14px;">La paradoja se vuelve visible cuando se observa que ambas compañías cotizan con descuento frente a sus comparables regionales, pese a tener flujos de caja predecibles y una posición de mercado dominante.</p>
+          <p style="margin-bottom:14px;font-style:italic;color:var(--muted);border-left:2px solid var(--gold);padding-left:12px;">"El mercado premia la narrativa de corto plazo sobre la solidez de largo plazo. Ahí está la oportunidad para el inversor paciente."</p>
+          <p style="margin-bottom:14px;">El análisis del Guardián del Valor sugiere que el margen de seguridad es real: el valor intrínseco de Banco de Chile muestra indicadores de solidez patrimonial y rentabilidad consistentes...</p>
+        </div>
+        <div class="card card-gold" style="margin-top:16px;">
+          <div style="font-size:11px;color:var(--gold);margin-bottom:6px;">📎 DATOS UTILIZADOS</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.7;">EEFF Banco de Chile Q4-2025 · CMF Chile<br>EEFF Santander Chile Q4-2025 · CMF Chile</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 10 — DASHBOARD ASESOR
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-asesor">
+    <div class="topbar">
+      <div class="topbar-logo">⚖️ SW</div>
+      <div class="topbar-title">Asesor</div>
+      <div class="topbar-btn" onclick="showModal('modal-add-client')">+</div>
+    </div>
+
+    <div class="scroll-body">
+      <!-- Resumen asesor -->
+      <div style="margin: 0 20px 16px; padding: 16px; background: var(--navy-card); border: 1px solid var(--border-g); border-radius: var(--radius);">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">CARTERA BAJO GESTIÓN</div>
+        <div style="display:flex;gap:20px;">
+          <div><div style="font-size:10px;color:var(--muted);">Clientes</div><div style="font-size:20px;font-weight:700;font-family:'Playfair Display',serif;">4</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">AUM Total</div><div style="font-size:20px;font-weight:700;font-family:'Playfair Display',serif;">$82M</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Propuestas</div><div style="font-size:20px;color:var(--gold);font-weight:700;font-family:'Playfair Display',serif;">2</div></div>
+        </div>
+      </div>
+
+      <div style="padding: 0 20px; margin-bottom: 8px; font-size:11px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase;">Clientes</div>
+
+      <div class="client-row" onclick="showScreen('screen-propuesta')">
+        <div class="client-avatar">👩‍💼</div>
+        <div style="flex:1;">
+          <div class="client-name">María Fernández</div>
+          <div class="client-info">$28M AUM · Perfil Moderado</div>
+        </div>
+        <div class="notif-dot"></div>
+      </div>
+
+      <div class="client-row" onclick="showScreen('screen-propuesta')">
+        <div class="client-avatar">👨‍💼</div>
+        <div style="flex:1;">
+          <div class="client-name">Carlos Herrera</div>
+          <div class="client-info">$35M AUM · Perfil Agresivo</div>
+        </div>
+        <div class="notif-dot"></div>
+      </div>
+
+      <div class="client-row">
+        <div class="client-avatar">🏢</div>
+        <div style="flex:1;">
+          <div class="client-name">Inmobiliaria Andina</div>
+          <div class="client-info">$14M AUM · Renta Fija</div>
+        </div>
+      </div>
+
+      <div class="client-row">
+        <div class="client-avatar">👴</div>
+        <div style="flex:1;">
+          <div class="client-name">Roberto Vidal</div>
+          <div class="client-info">$5M AUM · Conservador</div>
+        </div>
+      </div>
+
+      <!-- El Trazador — exclusivo asesor -->
+      <div style="margin: 16px 20px;">
+        <div class="card" style="border-color: rgba(83,74,183,0.4); background: rgba(83,74,183,0.05);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="font-size:18px;">📡</div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#A09AE8;">EL TRAZADOR DE SEÑALES</div>
+              <div class="badge" style="background:rgba(83,74,183,0.15);color:#A09AE8;border-color:rgba(83,74,183,0.3);margin-top:3px;">Solo asesores</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--off);line-height:1.6;">CHILE.SN en análisis técnico — Avatar exclusivo para asesores acreditados — zona de sobreventa técnica. MACD cruzando al alza en D1. Confluencia con media 200 períodos.</div>
+          <button class="btn-outline" style="margin-top:12px;font-size:12px;" onclick="showScreen('screen-chat')">Ver análisis completo →</button>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="navTo('screen-home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></div>
+      <div class="nav-item" onclick="navTo('screen-metricas',this)"><div class="nav-icon">📊</div><div class="nav-label">Métricas</div></div>
+      <div class="nav-item" onclick="navTo('screen-portfolio',this)"><div class="nav-icon">💼</div><div class="nav-label">Cartera</div></div>
+      <div class="nav-item" onclick="navTo('screen-realestate',this)"><div class="nav-icon">🏢</div><div class="nav-label">Real Estate</div></div>
+      <div class="nav-item active" onclick="navTo('screen-asesor',this)"><div class="nav-icon">🎯</div><div class="nav-label">Asesor</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 11 — PROPUESTA ASESOR
+  ═══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-propuesta">
+    <div class="topbar">
+      <div class="topbar-btn" onclick="goBack()">←</div>
+      <div class="topbar-title">Propuesta · María F.</div>
+      <div class="badge badge-gold" style="font-size:9px;">Pendiente</div>
+    </div>
+
+    <div class="scroll-body" style="padding: 16px 20px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Propuesta generada el 11 Abr · Análisis multiavatar</div>
+
+      <!-- Avatares que respaldan -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div class="badge badge-gold">⚖️ Guardián</div>
+        <div class="badge badge-green">🎯 Cazador</div>
+        <div class="badge" style="background:rgba(83,74,183,0.15);color:#A09AE8;border-color:rgba(83,74,183,0.3);">📡 Trazador</div>
+      </div>
+
+      <!-- Cambios propuestos -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+        <div class="proposal-item">
+          <div class="proposal-action action-buy">C</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">Propuesta: CHILE.SN</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">+2,000 acciones a $68.50 → $137,000</div>
+            <div style="font-size:11px;color:var(--off);margin-top:4px;line-height:1.5;">P/E 11.2x vs media 14.8x. Margen seguridad 19%. Soporte técnico $65 validado.</div>
+          </div>
+        </div>
+        <div class="proposal-item">
+          <div class="proposal-action action-hold">M</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">Mantener BSANTANDER.SN</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Sin cambios · 3,100 acciones</div>
+            <div style="font-size:11px;color:var(--off);margin-top:4px;line-height:1.5;">FCF yield 6.1%. Aguardar catalizador de próximo informe trimestral Q1.</div>
+          </div>
+        </div>
+        <div class="proposal-item">
+          <div class="proposal-action action-sell">V</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">Reducir liquidez</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">-$137,000 → financiar compra</div>
+            <div style="font-size:11px;color:var(--off);margin-top:4px;line-height:1.5;">Liquidez residual de $1.4M cubre 8 meses de flujo operacional.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enviar al cliente -->
+      <button class="btn-primary" onclick="showModal('modal-send-proposal')" style="margin-bottom:10px;">
+        📤 Enviar a María Fernández
+      </button>
+      <button class="btn-outline" style="font-size:13px;">Editar propuesta</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       MODALS
+  ═══════════════════════════════════════════════════ -->
+
+  <!-- Modal Agregar Posición -->
+  <div class="modal-backdrop" id="modal-add-position" onclick="closeModal(event,'modal-add-position')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:16px;">Nueva Posición</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input class="input-field" placeholder="Ticker (ej: CHILE.SN)" type="text">
+        <div style="display:flex;gap:8px;">
+          <input class="input-field" placeholder="Cantidad" type="number" style="flex:1;">
+          <input class="input-field" placeholder="Precio CLP" type="number" style="flex:1;">
+        </div>
+        <select class="input-field">
+          <option>Art. 107 LIR (10% GC)</option>
+          <option>Régimen General</option>
+          <option>Exento</option>
+        </select>
+        <button class="btn-primary" onclick="closeModal(null,'modal-add-position')">Agregar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Agregar Propiedad -->
+  <div class="modal-backdrop" id="modal-add-property" onclick="closeModal(event,'modal-add-property')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:16px;">Nueva Propiedad</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input class="input-field" placeholder="Dirección" type="text">
+        <div style="display:flex;gap:8px;">
+          <input class="input-field" placeholder="Precio compra UF" type="number" style="flex:1;">
+          <input class="input-field" placeholder="Pie UF" type="number" style="flex:1;">
+        </div>
+        <input class="input-field" placeholder="Canon arriendo mensual UF" type="number">
+        <input class="input-field" placeholder="Cuota hipoteca mensual UF" type="number">
+        <input class="input-field" placeholder="Gastos comunes + otros UF" type="number">
+        <button class="btn-primary" onclick="closeModal(null,'modal-add-property')">Calcular rentabilidad →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Enviar Propuesta -->
+  <div class="modal-backdrop" id="modal-send-proposal" onclick="closeModal(event,'modal-send-proposal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:8px;">Enviar propuesta</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">María Fernández recibirá la propuesta en lenguaje simple con los fundamentos en español.</div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Preview para el cliente:</div>
+        <div style="font-size:13px;color:var(--off);line-height:1.6;font-style:italic;">"Le propongo aumentar su posición en Enel Chile porque su precio actual está por debajo de lo que los análisis sugieren que vale. El dividendo del 4.8% anual le pagará mientras esperamos que el mercado lo reconozca..."</div>
+      </div>
+      <button class="btn-primary" onclick="closeModal(null,'modal-send-proposal')">✓ Confirmar envío</button>
+    </div>
+  </div>
+
+  <!-- Modal Perfil -->
+  <div class="modal-backdrop" id="modal-profile" onclick="closeModal(event,'modal-profile')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--gold-mid);display:flex;align-items:center;justify-content:center;font-size:22px;">👤</div>
+        <div>
+          <div style="font-size:16px;font-weight:600;">Juan José Calderón</div>
+          <div style="font-size:12px;color:var(--muted);">juanjo@rendimientocapital.com</div>
+          <div class="badge badge-gold" style="margin-top:4px;">Plan Pro</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+          <div style="font-size:13px;">Nivel de conocimiento</div>
+          <div style="font-size:12px;color:var(--gold);">Intermedio →</div>
+        </div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+          <div style="font-size:13px;">Avatar favorito</div>
+          <div style="font-size:12px;color:var(--gold);">⚖️ Guardián →</div>
+        </div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+          <div style="font-size:13px;">Notificaciones</div>
+          <div style="font-size:12px;color:var(--green);">✓ Activas</div>
+        </div>
+        <button class="btn-outline" style="font-size:13px;" onclick="closeModal(null,'modal-profile')">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT — NAVEGACIÓN Y LÓGICA
+═══════════════════════════════════════════════════════ -->
 <script>
-// Placeholder — contenido real se carga desde el archivo completo
-console.log('Symmetry Wealth PWA');
+const API_URL = 'https://api-production-46cd.up.railway.app';
+
+// ── ESTADO ────────────────────────────────────────────
+const state = {
+  currentScreen: 'screen-splash',
+  history: [],
+  avatar: 'guardian',
+  ticker: 'CHILE.SN',
+  nivel: 'intermedio',
+  messages: [],
+  token: localStorage.getItem('sw_token') || null,
+  briefs: {},
+  financials: {},
+  keyMetrics: {},
+};
+
+// ── CAPA DE DATOS — SW_API ────────────────────────────
+const SW_API = {
+  // Llamada genérica con fallback
+  async fetch(path) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+      const r = await fetch(API_URL + path, { headers });
+      if (!r.ok) throw new Error('status ' + r.status);
+      return await r.json();
+    } catch(e) {
+      console.warn('SW_API fallback:', path, e.message);
+      return null;
+    }
+  },
+
+  // Brief del avatar actual
+  async getBrief(ticker, avatar, nivel) {
+    const key = `${ticker}|${avatar}|${nivel}`;
+    if (state.briefs[key]) return state.briefs[key];
+    const data = await this.fetch(`/market/briefs?ticker=${ticker}&avatar=${avatar}&nivel=${nivel}`);
+    if (data) { state.briefs[key] = data; return data; }
+    return null;
+  },
+
+  // Key metrics del ticker
+  async getKeyMetrics(ticker) {
+    if (state.keyMetrics[ticker]) return state.keyMetrics[ticker];
+    const data = await this.fetch(`/market/key-metrics?ticker=${ticker}`);
+    if (data?.items?.length) {
+      state.keyMetrics[ticker] = data.items;
+      return data.items;
+    }
+    return null;
+  },
+
+  // Financials (income statement / balance / cash flow)
+  async getFinancials(ticker, collection, periodo_tipo = 'ytd') {
+    const key = `${ticker}|${collection}|${periodo_tipo}`;
+    if (state.financials[key]) return state.financials[key];
+    const data = await this.fetch(`/market/financials?ticker=${ticker}&collection=${collection}&periodo_tipo=${periodo_tipo}&limit=8`);
+    if (data?.items?.length) {
+      state.financials[key] = data.items;
+      return data.items;
+    }
+    return null;
+  },
+
+  // Chat con avatar
+  async chat(ticker, messages, avatar) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+      const r = await fetch(API_URL + '/claude/chat', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ticker, messages, avatar }),
+      });
+      if (!r.ok) throw new Error('status ' + r.status);
+      const d = await r.json();
+      return d.content || null;
+    } catch(e) {
+      console.warn('Chat API error:', e.message);
+      return null;
+    }
+  },
+};
+
+// ── HELPERS DE FORMATEO ───────────────────────────────
+function fmtMM(v) {
+  if (v == null) return '—';
+  const n = parseFloat(v);
+  if (Math.abs(n) >= 1000000) return (n/1000000).toFixed(2) + 'T';
+  if (Math.abs(n) >= 1000)    return (n/1000).toFixed(1) + 'B';
+  return n.toLocaleString('es-CL', {maximumFractionDigits: 0});
+}
+function fmtPct(v) { return v == null ? '—' : parseFloat(v).toFixed(1) + '%'; }
+function fmtX(v)   { return v == null ? '—' : parseFloat(v).toFixed(2) + 'x'; }
+function colorClass(v) { return parseFloat(v) >= 0 ? 'green' : 'red'; }
+
+// ── NAVEGACIÓN ────────────────────────────────────────
+function showScreen(id, addHistory = true) {
+  const current = document.querySelector('.screen.active');
+  const next    = document.getElementById(id);
+  if (!next || current === next) return;
+
+  if (addHistory && state.currentScreen) {
+    state.history.push(state.currentScreen);
+  }
+  state.currentScreen = id;
+
+  current.classList.remove('active');
+  next.classList.add('active', 'slide-in');
+  setTimeout(() => next.classList.remove('slide-in'), 350);
+}
+
+function goBack() {
+  if (state.history.length === 0) return;
+  const prev    = state.history.pop();
+  const current = document.querySelector('.screen.active');
+  const target  = document.getElementById(prev);
+  if (!target) return;
+
+  state.currentScreen = prev;
+  current.classList.remove('active');
+  target.classList.add('active', 'fade-in');
+  setTimeout(() => target.classList.remove('fade-in'), 400);
+}
+
+function navTo(screenId, navEl) {
+  // Actualizar nav activo
+  const nav = navEl.closest('.bottom-nav');
+  nav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  navEl.classList.add('active');
+
+  // Limpiar history y navegar
+  state.history = [];
+  showScreen(screenId, false);
+}
+
+// ── ONBOARDING ────────────────────────────────────────
+let obCurrentStep = 0;
+
+function goObStep(step) {
+  document.getElementById('ob-step-' + obCurrentStep).classList.remove('active');
+  document.getElementById('ob-d' + obCurrentStep).classList.add('done');
+  obCurrentStep = step;
+  document.getElementById('ob-step-' + step).classList.add('active');
+  document.getElementById('ob-d' + step).classList.add('done');
+}
+
+function goHome() {
+  document.getElementById('screen-onboarding').classList.remove('active');
+  const home = document.getElementById('screen-home');
+  home.classList.add('active', 'fade-in');
+  state.currentScreen = 'screen-home';
+  setTimeout(() => home.classList.remove('fade-in'), 400);
+}
+
+function selectOb(el) {
+  el.closest('.ob-options').querySelectorAll('.ob-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectAvatar(el) {
+  document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── INICIALIZACIÓN — CARGA DE DATOS REALES ────────────
+async function initApp() {
+  // Cargar precios reales
+  const [priceChile, priceSant] = await Promise.all([
+    SW_API.fetch('/market/price?ticker=CHILE.SN'),
+    SW_API.fetch('/market/price?ticker=BSANTANDER.SN'),
+  ]);
+
+  if (priceChile?.price) {
+    document.getElementById('price-chile').textContent = '$ ' + parseFloat(priceChile.price).toFixed(2);
+    const varEl = document.getElementById('var-chile');
+    const pct = parseFloat(priceChile.changesPercentage || 0);
+    varEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    varEl.className = 'ticker-var ' + (pct >= 0 ? 'green' : 'red');
+  }
+  if (priceSant?.price) {
+    document.getElementById('price-santander').textContent = '$ ' + parseFloat(priceSant.price).toFixed(2);
+    const varEl = document.getElementById('var-santander');
+    const pct = parseFloat(priceSant.changesPercentage || 0);
+    varEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    varEl.className = 'ticker-var ' + (pct >= 0 ? 'green' : 'red');
+  }
+
+  // Cargar brief inicial del avatar guardian para CHILE.SN
+  const guardianChip = document.querySelector('.avatar-chip[onclick*="guardian"]');
+  if (guardianChip) await selectHomeAvatar(guardianChip, 'guardian');
+
+  // Pre-cargar key metrics en background
+  SW_API.getKeyMetrics('CHILE.SN');
+  SW_API.getKeyMetrics('BSANTANDER.SN');
+}
+
+// ── SPLASH TIMER ──────────────────────────────────────
+setTimeout(() => {
+  const splash    = document.getElementById('screen-splash');
+  const onboarding = document.getElementById('screen-onboarding');
+  splash.classList.remove('active');
+  onboarding.classList.add('active', 'fade-in');
+  state.currentScreen = 'screen-onboarding';
+  setTimeout(() => onboarding.classList.remove('fade-in'), 400);
+}, 2800);
+
+// Iniciar carga de datos cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => setTimeout(initApp, 3200));
+
+// ── HOME AVATAR SELECTOR ──────────────────────────────
+// Datos mock de fallback (se usan si la API no responde)
+const BRIEF_FALLBACK = {
+  guardian:   { kicker: 'CHILE.SN · IPSA · Value', titular: '"Banco de Chile: solidez patrimonial y dividendo sostenible"', cuerpo: 'Banco de Chile mantiene un ROE del 20%+ consistente con su historial de largo plazo. La relación Deuda/Patrimonio permanece en niveles conservadores.', cita_avatar: '"El precio es lo que pagas. El valor es lo que obtienes." — El Guardián del Valor' },
+  cazador:    { kicker: 'BSANTANDER.SN · IPSA · GARP', titular: '"Santander Chile: crecimiento en comisiones con eficiencia operacional"', cuerpo: 'El ingreso neto por comisiones de Santander muestra crecimiento YoY. La ratio de eficiencia por debajo del 40% refleja una operación bien administrada.', cita_avatar: '"Invierte en lo que conoces, y conoce lo que inviertes." — El Cazador de Crecimiento' },
+  arquitecto: { kicker: 'CHILE.SN + BSANTANDER.SN · Quant', titular: '"Dos bancos, una industria: diversificación en el sistema bancario chileno"', cuerpo: 'La correlación entre Banco de Chile y Santander es alta por pertenecer al mismo sector. Sin embargo, sus perfiles de riesgo y estructura de fondeo difieren materialmente.', cita_avatar: '"Diversifica con intención, no por azar." — El Arquitecto de Portafolios' },
+  activista:  { kicker: 'CHILE.SN · Alta Convicción', titular: '"El FCF de Banco de Chile: ¿dónde está el valor no descontado?"', cuerpo: 'El flujo operacional de Banco de Chile supera consistentemente el promedio del sistema. La política de dividendos refleja una directiva orientada al accionista.', cita_avatar: '"La paciencia es la ventaja competitiva del inversor activo." — El Activista Paciente' },
+  lector:     { kicker: 'MACRO · TPM · IPC · Chile', titular: '"Banca chilena y ciclo de tasas: quién gana cuando la TPM baja"', cuerpo: 'El NIM de la banca chilena responde directamente al ciclo de TPM. En fases de baja de tasas, los bancos con mayor proporción de depósitos a plazo ajustan márgenes más rápido.', cita_avatar: '"Quien entiende el ciclo, entiende el precio." — El Lector del Ciclo' }
+};
+
+async function selectHomeAvatar(el, avatar) {
+  document.querySelectorAll('.avatar-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.avatar = avatar;
+
+  const bc = document.getElementById('brief-container');
+  bc.style.opacity = '0.4';
+
+  // Intentar cargar brief real desde la API
+  let data = await SW_API.getBrief(state.ticker, avatar, state.nivel);
+
+  // Fallback a mock si no hay datos
+  if (!data) data = BRIEF_FALLBACK[avatar];
+  if (!data) return;
+
+  setTimeout(() => {
+    bc.querySelector('.brief-kicker').textContent = data.kicker || '';
+    bc.querySelector('.brief-title').textContent  = data.titular || data.title || '';
+    bc.querySelector('.brief-body').textContent   = data.cuerpo  || data.body  || '';
+    bc.querySelector('.brief-quote').textContent  = data.cita_avatar || data.quote || '';
+    bc.style.opacity = '1';
+    bc.style.transition = 'opacity 0.3s';
+  }, 150);
+}
+
+function quickChat(el) {
+  const input = document.getElementById('chat-input');
+  input.value = el.textContent;
+  sendChat();
+}
+
+// ── SELECTOR DE TICKER ────────────────────────────────
+function selectTicker(ticker) {
+  state.ticker = ticker;
+  document.querySelectorAll('.ticker-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.ticker === ticker);
+  });
+  // Recargar brief con el nuevo ticker
+  const activeAvatar = document.querySelector('.avatar-chip.active');
+  if (activeAvatar) {
+    const avatar = activeAvatar.getAttribute('onclick').match(/'([^']+)'\s*\)/)?.[1] || 'guardian';
+    selectHomeAvatar(activeAvatar, avatar);
+  }
+}
+// ── GRÁFICO DUAL PRECIO + EPS ─────────────────────────
+let chartPeriod = '5A';
+
+function selectChartPeriod(el, period) {
+  el.closest('.pills').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  chartPeriod = period;
+  renderDualChart(state.ticker);
+}
+
+function normalize(vals, yMin, yMax) {
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  return vals.map(v => yMax - ((v - min) / range) * (yMax - yMin));
+}
+
+function smoothPath(xs, ys) {
+  if (!xs.length) return '';
+  let d = `M${xs[0].toFixed(1)},${ys[0].toFixed(1)}`;
+  for (let i = 1; i < xs.length; i++) {
+    const cpX = ((xs[i-1] + xs[i]) / 2).toFixed(1);
+    d += ` C${cpX},${ys[i-1].toFixed(1)} ${cpX},${ys[i].toFixed(1)} ${xs[i].toFixed(1)},${ys[i].toFixed(1)}`;
+  }
+  return d;
+}
+
+async function renderDualChart(ticker) {
+  const loadEl = document.getElementById('chart-loading');
+  if (loadEl) loadEl.style.display = 'block';
+  ['chart-price-area','chart-price-line','chart-eps-area','chart-eps-line','chart-fcf-area','chart-fcf-line']
+    .forEach(id => { const e = document.getElementById(id); if(e) e.setAttribute('d',''); });
+
+  // Cargar income_statement (EPS) y cash_flow (FCF) en paralelo
+  const [epaData, cfData] = await Promise.all([
+    SW_API.getFinancials(ticker, 'income_statement', 'ytd'),
+    SW_API.getFinancials(ticker, 'cash_flow', 'ytd'),
+  ]);
+  if (!epaData?.length) { if(loadEl) loadEl.textContent = 'Sin datos'; return; }
+
+  // Solo Q4 — período anual completo
+  const q4IS = (epaData).filter(d => d.quarter === 'Q4').sort((a,b) => a.year - b.year);
+  const q4CF = (cfData||[]).filter(d => d.quarter === 'Q4').sort((a,b) => a.year - b.year);
+
+  // Filtro de período seleccionado
+  const now = new Date().getFullYear();
+  const yearsMap = {'3A':3,'5A':5,'10A':10,'Todo':20};
+  const limit = yearsMap[chartPeriod] || 5;
+  const filtered = q4IS.filter(d => d.year >= now - limit);
+  if (filtered.length < 2) { if(loadEl) loadEl.textContent = 'Datos insuficientes'; return; }
+
+  const years   = filtered.map(d => d.year);
+  const epsVals = filtered.map(d => parseFloat(
+    d.fields?.utilidad_por_accion?.value || d.fields?.upa_calculada?.value || 0
+  ));
+
+  // FCF/acción = free_cash_flow / acciones_promedio_ponderado
+  // Lo tenemos en MM_CLP y acciones en unidades — FCF/acc en pesos
+  const fcfVals = years.map(yr => {
+    const cf = q4CF.find(d => d.year === yr);
+    if (!cf) return null;
+    const fcf     = parseFloat(cf.fields?.free_cash_flow?.value || 0);       // MM CLP
+    const isRow   = q4IS.find(d => d.year === yr);
+    const acciones = parseFloat(isRow?.fields?.acciones_promedio_ponderado?.value || 0);
+    if (!acciones) return null;
+    return (fcf * 1_000_000) / acciones;  // pesos por acción
+  });
+
+  // Precio implícito = EPS × múltiplo actual
+  const latestEPS = epsVals[epsVals.length-1] || 1;
+  const priceEl   = document.querySelector('.price-big');
+  const currentP  = priceEl ? parseFloat(priceEl.textContent.replace(/[^0-9.]/g,'')) : 0;
+  const multiple  = currentP && latestEPS ? currentP / latestEPS : 10;
+  const priceVals = epsVals.map(e => e * multiple);
+
+  // FCF en la misma escala que precio (FCF × mismo múltiplo)
+  const fcfScaled = fcfVals.map(v => v != null ? v * multiple : null);
+
+  // Coordenadas X
+  const W = 390, padL = 10, padR = 10;
+  const step = (W - padL - padR) / Math.max(years.length - 1, 1);
+  const xs = years.map((_,i) => padL + i * step);
+
+  // Normalizar usando todos los valores válidos juntos para misma escala
+  const allValid = [
+    ...priceVals,
+    ...epsVals.map(e => e * multiple),
+    ...fcfScaled.filter(v => v != null),
+  ];
+  const globalMin = Math.min(...allValid);
+  const globalMax = Math.max(...allValid);
+  const globalRange = globalMax - globalMin || 1;
+  const normY = (v) => 100 - ((v - globalMin) / globalRange) * 88 + 12;
+
+  const yP = priceVals.map(normY);
+  const yE = epsVals.map(e => normY(e * multiple));
+  const yF = fcfScaled.map((v, i) => v != null ? normY(v) : null);
+
+  const pLine = smoothPath(xs, yP);
+  const eLine = smoothPath(xs, yE);
+
+  // FCF puede tener nulos — construir path saltando gaps
+  let fLine = '';
+  for (let i = 0; i < xs.length; i++) {
+    if (yF[i] == null) continue;
+    if (fLine === '' || yF[i-1] == null) {
+      fLine += `M${xs[i].toFixed(1)},${yF[i].toFixed(1)}`;
+    } else {
+      const cpX = ((xs[i-1] + xs[i]) / 2).toFixed(1);
+      fLine += ` C${cpX},${yF[i-1].toFixed(1)} ${cpX},${yF[i].toFixed(1)} ${xs[i].toFixed(1)},${yF[i].toFixed(1)}`;
+    }
+  }
+
+  const H = 120;
+  const last = n => xs[xs.length-1].toFixed(1) + ',' + H + ' L' + xs[0].toFixed(1) + ',' + H + ' Z';
+
+  document.getElementById('chart-price-area').setAttribute('d', pLine + ` L${last()}`);
+  document.getElementById('chart-price-line').setAttribute('d', pLine);
+  document.getElementById('chart-eps-area').setAttribute('d', eLine + ` L${last()}`);
+  document.getElementById('chart-eps-line').setAttribute('d', eLine);
+  if (fLine) {
+    document.getElementById('chart-fcf-area').setAttribute('d', fLine + ` L${last()}`);
+    document.getElementById('chart-fcf-line').setAttribute('d', fLine);
+  }
+  if (loadEl) loadEl.style.display = 'none';
+
+  // Labels de años
+  const lc = document.getElementById('chart-year-labels');
+  if (lc) lc.innerHTML = years.map((y,i) =>
+    `<span style="position:absolute;left:${xs[i]-8}px;font-size:8px;color:rgba(255,255,255,0.3);font-family:'DM Mono',monospace;">${y}</span>`
+  ).join('');
+
+  // Insight con los 3 valores del último año
+  const lastEPS = epsVals[epsVals.length-1];
+  const lastFCF = fcfVals[fcfVals.length-1];
+  const insightEl2 = document.getElementById('km-insight');
+  if (insightEl2 && lastEPS) {
+    const fcfStr = lastFCF != null ? ` · FCF/acc $${lastFCF.toFixed(2)}` : '';
+    insightEl2.textContent = `EPS $${lastEPS.toFixed(2)}${fcfStr} · Q4-${years[years.length-1]} · Toca para analizar →`;
+  }
+
+  await updateKeyMetrics(ticker);
+}
+
+async function updateKeyMetrics(ticker) {
+  const kmData = await SW_API.getKeyMetrics(ticker);
+  if (!kmData?.length) return;
+  const latest = kmData.find(d => d.mes === 12) || kmData[0];
+  if (!latest?.metrics) return;
+  const m = latest.metrics;
+  const set = (id, v, suf) => { const e = document.getElementById(id); if(e && v!=null) e.textContent = parseFloat(v).toFixed(1) + suf; };
+  set('km-roe', m.roe_pct, '%');
+  set('km-roa', m.roa_pct, '%');
+  set('km-efic', m.eficiencia_pct, '%');
+  set('km-nim', m.nim_pct, '%');
+  set('km-margen', m.margen_neto_pct, '%');
+  set('km-provision', m.provision_pct, '%');
+  if (m.leverage != null) { const e = document.getElementById('km-leverage'); if(e) e.textContent = parseFloat(m.leverage).toFixed(1)+'x'; }
+}
+
+// Hook en showScreen para disparar el gráfico
+const _origShowScreen = showScreen;
+showScreen = function(id, addHistory) {
+  _origShowScreen(id, addHistory);
+  if (id === 'screen-metricas') setTimeout(() => renderDualChart(state.ticker), 120);
+};
+
+function selectPill(el) {
+  el.closest('.pills').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── EEFF TABS — DATOS REALES ──────────────────────────
+const EEFF_COLLECTIONS = {
+  is: 'income_statement',
+  bs: 'balance',
+  cf: 'cash_flow',
+};
+
+const EEFF_FIELDS = {
+  is: [
+    ['Ingresos Operacionales',  'total_ingresos_operacionales', fmtMM],
+    ['Ingreso Neto Intereses',  'ingreso_neto_intereses',       fmtMM],
+    ['Ingreso Neto Comisiones', 'ingreso_neto_comisiones',      fmtMM],
+    ['Provisiones',             'provisiones_riesgo_credito',   fmtMM],
+    ['Gastos Operacionales',    'total_gastos_operacionales',   fmtMM],
+    ['Utilidad Neta',           'utilidad_neta',                fmtMM],
+    ['UPA',                     'utilidad_por_accion',          v => v ? parseFloat(v).toFixed(2) : '—'],
+  ],
+  bs: [
+    ['Activos Totales',         'activos_totales',              fmtMM],
+    ['Colocaciones Clientes',   'colocaciones_clientes',        fmtMM],
+    ['Efectivo y Depósitos',    'efectivo_depositos',           fmtMM],
+    ['Depósitos Vista',         'depositos_vista',              fmtMM],
+    ['Depósitos Plazo',         'depositos_plazo',              fmtMM],
+    ['Patrimonio',              'patrimonio',                   fmtMM],
+    ['Pasivos Totales',         'pasivos_totales',              fmtMM],
+  ],
+  cf: [
+    ['Flujo Operacional',       'flujo_operacional',            fmtMM],
+    ['Flujo Inversión',         'flujo_inversion',              fmtMM],
+    ['Flujo Financiamiento',    'flujo_financiamiento',         fmtMM],
+    ['Free Cash Flow',          'free_cash_flow',               fmtMM],
+    ['Intereses Percibidos',    'intereses_percibidos',         fmtMM],
+    ['Intereses Pagados',       'intereses_pagados',            fmtMM],
+    ['Dividendos Pagados',      'dividendos_pagados',           fmtMM],
+  ],
+};
+
+async function selectEeffTab(el, tab) {
+  document.querySelectorAll('.eeff-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const body = document.getElementById('eeff-body');
+  body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Cargando datos...</div>';
+
+  const collection = EEFF_COLLECTIONS[tab];
+  const items = await SW_API.getFinancials(state.ticker, collection, 'ytd');
+
+  if (!items || !items.length) {
+    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">Sin datos disponibles</div>';
+    return;
+  }
+
+  // Tomar el período más reciente
+  const latest = items[0];
+  const prev   = items[1];
+  const periodo = latest.periodo || '';
+  const fields  = EEFF_FIELDS[tab] || [];
+
+  let rows = '';
+  for (const [label, field, fmt] of fields) {
+    const val     = latest.fields?.[field]?.value;
+    const prevVal = prev?.fields?.[field]?.value;
+    let varHtml = '';
+    if (val != null && prevVal != null && prevVal !== 0) {
+      const pct = ((val - prevVal) / Math.abs(prevVal)) * 100;
+      const cls = pct >= 0 ? 'green' : 'red';
+      varHtml = `<span class="metric-var ${cls}">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span>`;
+    }
+    const negClass = val != null && parseFloat(val) < 0 ? ' red' : (val != null && ['utilidad_neta','flujo_operacional','free_cash_flow','ingreso_neto_intereses'].includes(field) ? ' green' : '');
+    rows += `<div class="metric-row">
+      <div class="metric-label">${label}</div>
+      <div class="metric-value mono${negClass}">${fmt(val)} ${varHtml}</div>
+    </div>`;
+  }
+
+  body.innerHTML = `<div style="padding:8px 20px;">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px;letter-spacing:0.1em;">${state.ticker} · ${periodo} · MM CLP</div>
+    <div class="card">${rows}</div>
+    <div style="margin-top:10px;font-size:10px;color:var(--muted);text-align:center;">Fuente: EEFF CMF Chile · ${periodo}</div>
+  </div>`;
+}
+
+// ── CHAT — API REAL ───────────────────────────────────
+const AVATAR_NAMES = {
+  guardian: 'El Guardián del Valor',
+  cazador: 'El Cazador de Crecimiento',
+  arquitecto: 'El Arquitecto',
+  activista: 'El Activista Paciente',
+  lector: 'El Lector del Ciclo',
+  trazador: 'El Trazador de Señales'
+};
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  appendBubble('chat-messages', text, 'user');
+  const typing = appendBubble('chat-messages', '<div class="dots"><span></span><span></span><span></span></div>', 'ai');
+
+  // Agregar mensaje al historial
+  state.messages.push({ role: 'user', content: text });
+
+  // Llamar a la API real
+  const response = await SW_API.chat(state.ticker, state.messages, state.avatar);
+
+  typing.remove();
+
+  const finalResponse = response ||
+    'Analizo tu pregunta desde la perspectiva del ' + (AVATAR_NAMES[state.avatar] || 'avatar') +
+    '. Por ahora opero en modo demo — conecta tu cuenta para análisis completos.';
+
+  // Guardar respuesta en historial
+  state.messages.push({ role: 'assistant', content: finalResponse });
+
+  appendBubble('chat-messages', finalResponse, 'ai');
+  document.getElementById('chat-messages').scrollTop = 99999;
+}
+
+async function sendEeffChat() {
+  const input = document.getElementById('eeff-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const msgs = document.getElementById('eeff-chat-msgs');
+  const userDiv = document.createElement('div');
+  userDiv.style.cssText = 'font-size:12px;color:var(--gold);margin-bottom:4px;';
+  userDiv.textContent = '↑ ' + text;
+  msgs.appendChild(userDiv);
+
+  const loadDiv = document.createElement('div');
+  loadDiv.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;';
+  loadDiv.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(loadDiv);
+
+  // Usar chat API con contexto del ticker actual
+  const eeffMessages = [{ role: 'user', content: `Sobre los estados financieros de ${state.ticker}: ${text}` }];
+  const response = await SW_API.chat(state.ticker, eeffMessages, state.avatar);
+
+  loadDiv.remove();
+
+  const respDiv = document.createElement('div');
+  respDiv.style.cssText = 'font-size:12px;color:var(--off);line-height:1.5;padding:6px;background:var(--navy-soft);border-radius:8px;margin-bottom:4px;';
+  respDiv.textContent = response || 'Consulta los datos directamente en las pestañas IS / Balance / CF de arriba.';
+  msgs.appendChild(respDiv);
+  msgs.scrollTop = 99999;
+}
+
+function appendBubble(containerId, html, type) {
+  const container = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = 'bubble bubble-' + type;
+  div.innerHTML = html;
+  container.appendChild(div);
+  container.scrollTop = 99999;
+  return div;
+}
+
+// ── MODALS ────────────────────────────────────────────
+function showModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(event, id) {
+  if (!event || event.target.id === id) {
+    document.getElementById(id).classList.remove('open');
+  }
+}
+
+// ── AUTO-RESIZE TEXTAREA ──────────────────────────────
+document.querySelectorAll('textarea').forEach(ta => {
+  ta.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+  });
+  ta.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const sendBtn = this.nextElementSibling;
+      if (sendBtn) sendBtn.click();
+    }
+  });
+});
+
+console.log('Symmetry Wealth PWA iniciada. Backend: ' + API_URL);
 </script>
 </body>
 </html>
