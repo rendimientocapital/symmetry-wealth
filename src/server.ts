@@ -14,7 +14,7 @@ const app = express()
 const PORT = parseInt(process.env.PORT || '3000')
 
 app.use(helmet())
-app.use(cors({ origin: [process.env.CORS_ORIGIN || 'https://app.symmetrygroup.cl', 'https://symmetrygroup.cl', 'http://localhost:3001'], credentials: true }))
+app.use(cors({ origin: [process.env.CORS_ORIGIN || 'https://app.symmetrygroup.cl', 'https://symmetrygroup.cl', 'https://rendimientocapital.github.io', 'http://app.symmetrygroup.cl', 'http://localhost:3001', 'http://localhost:3000'], credentials: true }))
 app.use(rateLimit({ windowMs: 15*60*1000, max: 200, message: { error: 'Rate limit exceeded' } }))
 app.use(logger)
 app.use('/webhooks', wixWebhook)
