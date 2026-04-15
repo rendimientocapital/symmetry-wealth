@@ -14,7 +14,7 @@ router.get('/financials', async (req: Request, res: Response) => {
   if (!ticker || !collection) return res.status(400).json({ error: 'ticker y collection requeridos' })
 
   const maxRows = Math.min(
-    parseInt(limit || '99'),
+    parseInt(limit || '400'),
     PLAN_LIMITS[req.user?.plan || 'free'] || 80
   )
 
@@ -26,7 +26,7 @@ router.get('/financials', async (req: Request, res: Response) => {
     .eq('periodo_tipo', periodo_tipo)
     .order('year', { ascending: false })
     .order('mes', { ascending: false })
-    .limit(maxRows)
+    .limit(maxRows * 25)
 
   if (error) return res.status(500).json({ error: error.message })
 
