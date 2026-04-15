@@ -121,4 +121,22 @@ router.get('/price', async (req: Request, res: Response) => {
   }
 })
 
+
+// GET /market/historical-prices?ticker=CHILE.SN
+router.get('/historical-prices', async (req: Request, res: Response) => {
+  const { ticker } = req.query as Record<string, string>
+  if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
+
+  const { data, error } = await supabase
+    .from('market_prices')
+    .select('periodo, year, mes, quarter, fecha, precio')
+    .eq('ticker', ticker)
+    .not('periodo', 'is', null)
+    .order('year', { ascending: true })
+    .order('mes', { ascending: true })
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ticker, items: data || [] })
+})
+
 export default router
