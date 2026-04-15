@@ -15,7 +15,7 @@ router.get('/financials', async (req: Request, res: Response) => {
 
   const maxRows = Math.min(
     parseInt(limit || '99'),
-    PLAN_LIMITS[req.user!.plan] || 4
+    PLAN_LIMITS[req.user?.plan || 'free'] || 80
   )
 
   const { data, error } = await supabase
@@ -54,7 +54,7 @@ router.get('/key-metrics', async (req: Request, res: Response) => {
   const { ticker } = req.query as Record<string, string>
   if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
 
-  const maxPeriodos = PLAN_LIMITS[req.user!.plan] || 4
+  const maxPeriodos = PLAN_LIMITS[req.user?.plan || 'free'] || 80
 
   const { data, error } = await supabase
     .from('financial_data')
