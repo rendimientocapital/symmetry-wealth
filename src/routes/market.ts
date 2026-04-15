@@ -9,7 +9,7 @@ const PLAN_LIMITS: Record<string, number> = {
 }
 
 // GET /market/financials?ticker=CHILE.SN&collection=income_statement&periodo_tipo=ytd
-router.get('/financials', requireAuth, async (req: Request, res: Response) => {
+router.get('/financials', async (req: Request, res: Response) => {
   const { ticker, collection, periodo_tipo = 'ytd', limit } = req.query as Record<string, string>
   if (!ticker || !collection) return res.status(400).json({ error: 'ticker y collection requeridos' })
 
@@ -50,7 +50,7 @@ router.get('/financials', requireAuth, async (req: Request, res: Response) => {
 })
 
 // GET /market/key-metrics?ticker=CHILE.SN
-router.get('/key-metrics', requireAuth, async (req: Request, res: Response) => {
+router.get('/key-metrics', async (req: Request, res: Response) => {
   const { ticker } = req.query as Record<string, string>
   if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
 
@@ -78,7 +78,7 @@ router.get('/key-metrics', requireAuth, async (req: Request, res: Response) => {
 })
 
 // GET /market/briefs?ticker=CHILE.SN&avatar=guardian&nivel=intermedio
-router.get('/briefs', requireAuth, async (req: Request, res: Response) => {
+router.get('/briefs', async (req: Request, res: Response) => {
   const { ticker, avatar, nivel, fecha } = req.query as Record<string, string>
   if (!ticker || !avatar || !nivel) return res.status(400).json({ error: 'ticker, avatar y nivel requeridos' })
 
@@ -99,7 +99,7 @@ router.get('/briefs', requireAuth, async (req: Request, res: Response) => {
 })
 
 // GET /market/price?ticker=CHILE.SN
-router.get('/price', requireAuth, async (req: Request, res: Response) => {
+router.get('/price', async (req: Request, res: Response) => {
   const { ticker } = req.query as Record<string, string>
   if (!ticker) return res.status(400).json({ error: 'ticker requerido' })
 
