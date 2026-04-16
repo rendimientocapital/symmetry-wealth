@@ -995,7 +995,7 @@ body {
         <div style="position:absolute;bottom:6px;right:8px;display:flex;gap:8px;align-items:center;">
           <div style="display:flex;align-items:center;gap:3px;">
             <div style="width:10px;height:2px;background:#C9A54C;border-radius:1px;"></div>
-            <div style="font-size:8px;color:var(--muted);font-family:'DM Mono',monospace;">Precio</div>
+            <div style="font-size:8px;color:var(--muted);font-family:'DM Mono',monospace;" title="Cierre último día hábil del Q. Fuente: Yahoo Finance.">Precio ⓘ</div>
           </div>
           <div style="display:flex;align-items:center;gap:3px;">
             <div style="width:10px;height:0;border-top:2px dashed #1BB37A;"></div>
@@ -1008,6 +1008,12 @@ body {
         </div>
         <!-- Labels años -->
         <div id="chart-year-labels" style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;"></div>
+      </div>
+
+      <!-- Disclaimer gráfico -->
+      <div style="padding:2px 20px 8px;display:flex;align-items:flex-start;gap:5px;">
+        <div style="font-size:9px;color:rgba(201,165,76,0.45);flex-shrink:0;">ⓘ</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.28);line-height:1.45;"><span style="color:rgba(201,165,76,0.55);">Precio:</span> cierre del último día hábil del trimestre (Q). Fuente: Yahoo Finance. EPS y FCF/acc: EEFF CMF anual.</div>
       </div>
 
       <!-- Key metrics dinámicos -->
@@ -1632,6 +1638,18 @@ const SW_API = {
     return null;
   },
 
+  // Precios históricos trimestrales (Yahoo Finance via Supabase)
+  async getHistoricalPrices(ticker) {
+    const key = `prices_${ticker}`;
+    if (state.financials[key]) return state.financials[key];
+    const data = await this.fetch(`/market/historical-prices?ticker=${ticker}`);
+    if (data?.items?.length) {
+      state.financials[key] = data.items;
+      return data.items;
+    }
+    return null;
+  },
+
   // Financials (income statement / balance / cash flow)
   async getFinancials(ticker, collection, periodo_tipo = 'ytd') {
     const key = `${ticker}|${collection}|${periodo_tipo}`;
@@ -1911,12 +1929,18 @@ async function renderDualChart(ticker) {
     return (fcf * 1_000_000) / acciones;  // pesos por acción
   });
 
-  // Precio implícito = EPS × múltiplo actual
-  const latestEPS = epsVals[epsVals.length-1] || 1;
-  const priceEl   = document.querySelector('.price-big');
-  const currentP  = priceEl ? parseFloat(priceEl.textContent.replace(/[^0-9.]/g,'')) : 0;
-  const multiple  = currentP && latestEPS ? currentP / latestEPS : 10;
-  const priceVals = epsVals.map(e => e * multiple);
+  // Precio real desde market_prices (Yahoo Finance, cierre último día del Q)
+  const pricesData = await SW_API.getHistoricalPrices(ticker);
+  const priceVals = years.map(yr => {
+    const p = pricesData?.find(d => d.year === yr && d.quarter === 'Q4');
+    return p ? parseFloat(p.precio) : null;
+  });
+  // Fallback EPS × múltiplo si no hay precio real
+  const latestEPS  = epsVals[epsVals.length-1] || 1;
+  const priceEl    = document.querySelector('.price-big');
+  const currentP   = priceEl ? parseFloat(priceEl.textContent.replace(/[^0-9.]/g,'')) : 0;
+  const multiple   = currentP && latestEPS ? currentP / latestEPS : 10;
+  const priceValsF = priceVals.map((p, i) => p != null ? p : epsVals[i] * multiple);
 
   // FCF en la misma escala que precio (FCF × mismo múltiplo)
   const fcfScaled = fcfVals.map(v => v != null ? v * multiple : null);
@@ -1928,7 +1952,7 @@ async function renderDualChart(ticker) {
 
   // Normalizar usando todos los valores válidos juntos para misma escala
   const allValid = [
-    ...priceVals,
+    ...(typeof priceValsF !== "undefined" ? priceValsF : priceVals).filter(v => v != null),
     ...epsVals.map(e => e * multiple),
     ...fcfScaled.filter(v => v != null),
   ];
@@ -1937,7 +1961,7 @@ async function renderDualChart(ticker) {
   const globalRange = globalMax - globalMin || 1;
   const normY = (v) => 100 - ((v - globalMin) / globalRange) * 88 + 12;
 
-  const yP = priceVals.map(normY);
+  const yP = (typeof priceValsF !== "undefined" ? priceValsF : priceVals).map((v,i) => v != null ? normY(v) : normY(epsVals[i]*multiple));
   const yE = epsVals.map(e => normY(e * multiple));
   const yF = fcfScaled.map((v, i) => v != null ? normY(v) : null);
 
